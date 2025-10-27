@@ -1,5 +1,8 @@
 import { MediaFile } from '../state/mediaStore'
 
+// Store the actual File objects to maintain reference
+const fileObjectCache = new Map<string, File>()
+
 export const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
@@ -29,20 +32,97 @@ export const getFileExtension = (filename: string): string => {
   return filename.split('.').pop()?.toLowerCase() || ''
 }
 
-export const createMediaFile = (file: File): MediaFile => {
-  const extension = getFileExtension(file.name)
-  const isVideo = file.type.startsWith('video/')
-  
-  return {
-    id: generateId(),
-    name: file.name,
-    path: file.name, // For now, we'll use the filename as path
-    size: file.size,
-    type: isVideo ? 'video' : 'audio',
-    format: extension,
-    createdAt: new Date(),
-    lastModified: new Date(file.lastModified)
-  }
+export const createMediaFile = (file: File): Promise<MediaFile> => {
+  return new Promise((resolve) => {
+    const extension = getFileExtension(file.name)
+    const isVideo = file.type.startsWith('video/')
+    const id = generateId()
+    
+    // Create a blob URL for the file
+    const blobUrl = URL.createObjectURL(file)
+    
+    // Cache the file object
+    fileObjectCache.set(id, file)
+    
+    // Try to get the original file path (works in Tauri/Electron)
+    // @ts-ignore - path property exists in Tauri but not in standard File API
+    const originalPath = file.path || (file as any).path
+    
+    const mediaFile: MediaFile = {
+      id,
+      name: file.name,
+      path: blobUrl, // Use blob URL for video playback
+      originalPath: originalPath, // Store original file path if available
+      size: file.size,
+      type: isVideo ? 'video' : 'audio',
+      format: extension,
+      createdAt: new Date(),
+      lastModified: new Date(file.lastModified)
+    }
+    
+    // Extract video duration if it's a video
+    if (isVideo) {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.muted = true // Mute to allow autoplay
+      
+      let resolved = false
+      
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true
+          console.warn('Video metadata loading timeout for:', file.name)
+          video.remove()
+          resolve(mediaFile)
+        }
+      }, 10000) // 10 second timeout
+      
+      video.onloadedmetadata = () => {
+        if (!resolved) {
+          resolved = true
+          clearTimeout(timeout)
+          mediaFile.duration = video.duration
+          console.log('Video metadata loaded:', {
+            name: file.name,
+            duration: video.duration,
+            width: video.videoWidth,
+            height: video.videoHeight
+          })
+          video.remove()
+          resolve(mediaFile)
+        }
+      }
+      
+      video.onerror = (e) => {
+        if (!resolved) {
+          resolved = true
+          clearTimeout(timeout)
+          console.error('Error loading video metadata for:', file.name, e)
+          video.remove()
+          resolve(mediaFile)
+        }
+      }
+      
+      // Try to trigger loading by appending to DOM briefly
+      video.style.display = 'none'
+      document.body.appendChild(video)
+      video.src = blobUrl
+      video.load()
+      
+    } else {
+      resolve(mediaFile)
+    }
+  })
+}
+
+// Get cached file object
+export const getCachedFile = (id: string): File | undefined => {
+  return fileObjectCache.get(id)
+}
+
+// Clean up cached file
+export const cleanupFile = (id: string): void => {
+  fileObjectCache.delete(id)
 }
 
 export interface ValidationResult {

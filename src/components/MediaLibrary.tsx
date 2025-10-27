@@ -1,22 +1,46 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMediaStore } from '../state/mediaStore'
+import { useEditState } from '../state/editState'
 import MediaListItem from './MediaListItem'
 import ConfirmationDialog from './ConfirmationDialog'
 
 type ViewMode = 'grid' | 'list'
 
 const MediaLibrary: React.FC = () => {
+  const navigate = useNavigate()
   const { files, selectedFileId, selectFile, removeFile, isLoading, error } = useMediaStore()
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const { setCurrentFile } = useEditState()
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [fileToDelete, setFileToDelete] = useState<string | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewFile, setPreviewFile] = useState<any>(null)
+
+  // Handle ESC key to close preview
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showPreview) {
+        setShowPreview(false)
+        setPreviewFile(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showPreview])
 
   const handleEdit = (file: any) => {
-    console.log('Edit file:', file.name)
+    // Select the file and navigate to editor
+    selectFile(file.id)
+    setCurrentFile(file)
+    navigate('/editor')
   }
 
   const handlePreview = (file: any) => {
-    console.log('Preview file:', file.name)
+    // Show preview modal
+    setPreviewFile(file)
+    setShowPreview(true)
   }
 
   const handleDelete = (id: string) => {
@@ -246,6 +270,114 @@ const MediaLibrary: React.FC = () => {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
+
+      {/* Preview Modal */}
+      {showPreview && previewFile && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl w-[95vw] max-w-7xl max-h-[95vh] overflow-hidden shadow-2xl animate-scale-in flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700/30 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center text-3xl">
+                  👁️
+                </div>
+                <div>
+                  <h3 className="text-3xl font-bold text-white">Preview</h3>
+                  <p className="text-base text-gray-400 truncate max-w-2xl mt-1">{previewFile.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPreview(false)
+                  setPreviewFile(null)
+                }}
+                className="p-3 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-xl transition-all duration-200 hover:scale-110"
+                title="Close (ESC)"
+              >
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Video Preview */}
+            <div className="flex-1 overflow-auto p-8">
+              <div className="bg-black rounded-2xl overflow-hidden mb-6">
+                <video
+                  key={previewFile.path}
+                  src={previewFile.path}
+                  controls
+                  autoPlay
+                  preload="metadata"
+                  className="w-full h-auto min-h-[500px] max-h-[calc(95vh-300px)]"
+                  style={{ aspectRatio: '16/9' }}
+                  onError={(e) => {
+                    console.error('Video preview error:', e)
+                    const target = e.target as HTMLVideoElement
+                    console.error('Video src:', target.src)
+                    console.error('Video error:', target.error)
+                  }}
+                  onLoadedMetadata={(e) => {
+                    const target = e.target as HTMLVideoElement
+                    console.log('Video loaded:', {
+                      duration: target.duration,
+                      width: target.videoWidth,
+                      height: target.videoHeight
+                    })
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+
+              {/* File Info */}
+              <div className="grid grid-cols-4 gap-6">
+                <div className="p-5 bg-gray-800/40 rounded-2xl backdrop-blur-sm">
+                  <span className="block text-sm text-gray-400 uppercase tracking-wider mb-2">Size</span>
+                  <span className="font-mono text-2xl font-bold text-white">{(previewFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                </div>
+                <div className="p-5 bg-gray-800/40 rounded-2xl backdrop-blur-sm">
+                  <span className="block text-sm text-gray-400 uppercase tracking-wider mb-2">Format</span>
+                  <span className="font-mono text-2xl font-bold uppercase text-white">{previewFile.format}</span>
+                </div>
+                <div className="p-5 bg-gray-800/40 rounded-2xl backdrop-blur-sm">
+                  <span className="block text-sm text-gray-400 uppercase tracking-wider mb-2">Duration</span>
+                  <span className="font-mono text-2xl font-bold text-white">
+                    {previewFile.duration ? `${previewFile.duration.toFixed(2)}s` : 'Loading...'}
+                  </span>
+                </div>
+                <div className="p-5 bg-gray-800/40 rounded-2xl backdrop-blur-sm">
+                  <span className="block text-sm text-gray-400 uppercase tracking-wider mb-2">Type</span>
+                  <span className="font-mono text-2xl font-bold text-white">{previewFile.type}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-700/30 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowPreview(false)
+                  setPreviewFile(null)
+                }}
+                className="px-8 py-4 bg-gray-700/50 hover:bg-gray-700/70 text-white font-semibold rounded-xl transition-all duration-200 text-lg"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  handleEdit(previewFile)
+                  setShowPreview(false)
+                  setPreviewFile(null)
+                }}
+                className="px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-glow text-lg hover:scale-105"
+              >
+                ✂️ Edit This File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

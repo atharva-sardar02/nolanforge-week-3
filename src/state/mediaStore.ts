@@ -3,7 +3,8 @@ import { create } from 'zustand'
 export interface MediaFile {
   id: string
   name: string
-  path: string
+  path: string // Blob URL for preview
+  originalPath?: string // Original file system path for export
   size: number
   duration?: number
   thumbnail?: string

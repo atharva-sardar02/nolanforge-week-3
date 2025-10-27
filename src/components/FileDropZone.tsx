@@ -1,17 +1,66 @@
 import React, { useCallback, useState } from 'react'
 import { useMediaStore } from '../state/mediaStore'
+import { open } from '@tauri-apps/plugin-dialog'
+import { readFile } from '@tauri-apps/plugin-fs'
 
 interface FileDropZoneProps {
   onFilesAdded?: (files: File[]) => void
+  onFilesAddedWithPath?: (files: { file: File; path: string }[]) => void
   className?: string
 }
 
 const FileDropZone: React.FC<FileDropZoneProps> = ({ 
-  onFilesAdded, 
+  onFilesAdded,
+  onFilesAddedWithPath,
   className = '' 
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const { setLoading, setError } = useMediaStore()
+
+  const handleTauriFileOpen = useCallback(async () => {
+    try {
+      const selected = await open({
+        multiple: true,
+        filters: [{
+          name: 'Video',
+          extensions: ['mp4', 'mov', 'avi']
+        }]
+      })
+
+      if (!selected) return // User cancelled
+
+      const paths = Array.isArray(selected) ? selected : [selected]
+      setLoading(true)
+
+      // Convert file paths to File objects with path information
+      const filesWithPath = await Promise.all(
+        paths.map(async (path) => {
+          const fileData = await readFile(path)
+          const fileName = path.split(/[\\/]/).pop() || 'video.mp4'
+          const file = new File([fileData], fileName, {
+            type: `video/${fileName.split('.').pop()}`
+          })
+          // Attach the path to the file object
+          Object.defineProperty(file, 'path', {
+            value: path,
+            writable: false,
+            configurable: true
+          })
+          return { file, path }
+        })
+      )
+
+      if (onFilesAddedWithPath) {
+        onFilesAddedWithPath(filesWithPath)
+      } else {
+        onFilesAdded?.(filesWithPath.map(f => f.file))
+      }
+    } catch (error) {
+      console.error('Error opening files:', error)
+      setError('Failed to open files. Please try again.')
+      setLoading(false)
+    }
+  }, [onFilesAdded, onFilesAddedWithPath, setError, setLoading])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -65,18 +114,9 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
   }, [onFilesAdded, setLoading])
 
   const handleClick = useCallback(() => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.multiple = true
-    input.accept = 'video/mp4,video/mov,video/avi'
-    input.onchange = (e) => {
-      const target = e.target as HTMLInputElement
-      if (target.files) {
-        handleFileInput({ target } as React.ChangeEvent<HTMLInputElement>)
-      }
-    }
-    input.click()
-  }, [handleFileInput])
+    // Use Tauri's file dialog which gives us the actual file path
+    handleTauriFileOpen()
+  }, [handleTauriFileOpen])
 
   return (
     <div

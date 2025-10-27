@@ -29,9 +29,15 @@ const Uploader: React.FC = () => {
         setError(errorMessages.join('; '))
       }
       
+      // Process valid files asynchronously to extract metadata
       for (const file of validation.validFiles) {
-        const mediaFile = createMediaFile(file)
-        addFile(mediaFile)
+        try {
+          const mediaFile = await createMediaFile(file)
+          addFile(mediaFile)
+        } catch (err) {
+          console.error(`Failed to process file ${file.name}:`, err)
+          setError(`Failed to process ${file.name}`)
+        }
       }
       
       if (validation.validFiles.length > 0) {

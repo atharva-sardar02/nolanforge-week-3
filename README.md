@@ -1,114 +1,128 @@
-# NolanForge
+# NolanForge - Video Editor
 
-A modular desktop video editor built with Tauri (Rust) and React, designed for rapid, offline video editing.
+A modern, intuitive desktop video editor built with Tauri, React, and FFmpeg.
 
 ## Features
 
-- **📁 Uploader**: Import and organize video files (MP4/MOV)
-- **✂️ Editor**: Trim, preview, and arrange clips on timeline
-- **🎥 Recorder**: Capture new footage from screen or webcam
-- **🎨 Modern UI**: Clean interface with dark/light theme support
-- **⚡ Fast**: Native desktop performance with Rust backend
-- **🔒 Offline**: Works completely offline, no cloud dependencies
-
-## Tech Stack
-
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **Backend**: Tauri (Rust)
-- **State Management**: Zustand
-- **Testing**: Vitest + React Testing Library
-- **Routing**: React Router
+✅ **Media Library** - Import and manage your video files  
+✅ **Video Player** - High-quality video playback with controls  
+✅ **Timeline** - Visual timeline with trim markers  
+✅ **Trim Controls** - Precise in/out point selection  
+✅ **Export** - Export trimmed videos with FFmpeg  
+🚧 **Recorder** - Screen recording (coming soon)
 
 ## Prerequisites
 
-- **Node.js** (v18 or higher)
-- **Rust** (latest stable)
-- **FFmpeg** (for video processing)
+Before running NolanForge, you need to install **FFmpeg**:
 
-## Development Setup
+### Windows
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd nolanforge-week-3
-   ```
+**Option 1: Using Chocolatey (Recommended)**
+```bash
+choco install ffmpeg
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+**Option 2: Using Scoop**
+```bash
+scoop install ffmpeg
+```
 
-3. **Start development server**
-   ```bash
-   npm run tauri dev
-   ```
+**Option 3: Using Winget**
+```bash
+winget install --id=Gyan.FFmpeg -e
+```
 
-4. **Run tests**
-   ```bash
-   npm test
-   ```
+**Option 4: Manual Installation**
+1. Download from [gyan.dev/ffmpeg/builds](https://www.gyan.dev/ffmpeg/builds/) (get "ffmpeg-release-essentials.zip")
+2. Extract to `C:\ffmpeg`
+3. Add to PATH:
+   - Press `Win + R`, type `sysdm.cpl`, press Enter
+   - Go to "Advanced" tab → "Environment Variables"
+   - Under "System variables", select "Path" → "Edit"
+   - Click "New" and add `C:\ffmpeg\bin`
+   - Click "OK" on all windows
+4. Restart your terminal/PowerShell
 
-5. **Build for production**
-   ```bash
-   npm run build
-   ```
+### macOS
+```bash
+brew install ffmpeg
+```
+
+### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install ffmpeg
+```
+
+### Verify Installation
+After installing, verify FFmpeg is accessible:
+```bash
+ffmpeg -version
+```
+
+## Development
+
+### Install Dependencies
+```bash
+npm install
+```
+
+### Run Development Server
+```bash
+npm run tauri dev
+```
+
+### Build for Production
+```bash
+npm run tauri build
+```
+
+## Usage
+
+1. **Import Videos**: Go to the Uploader tab and drag & drop or browse for video files
+2. **Edit Video**: Click "Edit" on any video in the Media Library
+3. **Set Trim Points**: 
+   - Use the timeline to drag trim markers
+   - Or click "Set In" / "Set Out" buttons
+   - Keyboard shortcuts: `I` (in point), `O` (out point)
+4. **Export**: Click the "Export Trimmed Video" button and select where to save
+
+### Keyboard Shortcuts
+
+- `Space` / `K` - Play/Pause
+- `←` / `→` - Step backward/forward by 1 frame
+- `J` / `L` - Rewind/Fast forward
+- `I` - Set trim start (in point)
+- `O` - Set trim end (out point)
+- `Home` / `End` - Go to start/end of video
+- `F` - Toggle fullscreen
+- `M` - Toggle mute
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
+- **Desktop Shell**: Tauri (Rust)
+- **Video Processing**: FFmpeg
+- **State Management**: Zustand
+- **Testing**: Vitest, React Testing Library
 
 ## Project Structure
 
 ```
-src/
-├── components/          # Reusable UI components
-│   ├── SidebarNav.tsx  # Navigation sidebar
-│   └── __tests__/      # Component tests
-├── routes/             # Page components
-│   ├── Uploader.tsx    # File import module
-│   ├── Editor.tsx      # Video editing module
-│   └── Recorder.tsx    # Recording module
-├── state/              # State management
-│   ├── appState.ts     # Global app state (Zustand)
-│   └── __tests__/      # State tests
-├── test/               # Test configuration
-│   └── setup.ts        # Test setup and mocks
-└── App.tsx             # Main app component
+nolanforge-week-3/
+├── src/                    # Frontend source
+│   ├── components/         # React components
+│   ├── routes/            # Page components
+│   ├── state/             # Zustand stores
+│   ├── hooks/             # Custom React hooks
+│   └── utils/             # Utility functions
+├── src-tauri/             # Rust/Tauri backend
+│   └── src/
+│       ├── commands.rs    # Tauri commands
+│       └── lib.rs         # Main entry point
+└── memory-bank/           # Project documentation
 ```
-
-## Available Scripts
-
-- `npm run dev` - Start Vite dev server
-- `npm run tauri dev` - Start Tauri development
-- `npm run build` - Build for production
-- `npm run test` - Run tests in watch mode
-- `npm run test:run` - Run tests once
-- `npm run test:ui` - Run tests with UI
-
-## Development Status
-
-### ✅ Completed (PR 1.1 - PR 1.8)
-- [x] Tauri project initialization
-- [x] Tailwind CSS styling
-- [x] Testing framework setup
-- [x] React Router with 3 routes
-- [x] Sidebar navigation with state management
-- [x] Zustand state management
-- [x] Comprehensive unit tests
-- [x] Build verification
-
-### 🚧 Next Steps (PR 2.1 - PR 6.3)
-- [ ] File import and media library
-- [ ] Video preview and clip selection
-- [ ] Timeline and trim controls
-- [ ] FFmpeg export functionality
-- [ ] Packaging and distribution
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License.
+MIT

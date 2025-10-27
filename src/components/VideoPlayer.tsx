@@ -10,6 +10,8 @@ interface VideoPlayerProps {
   onPlay?: () => void
   onPause?: () => void
   onSeek?: (time: number) => void
+  externalIsPlaying?: boolean // Control playback from parent
+  seekToTime?: number // External seek control
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -19,7 +21,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onLoadedMetadata,
   onPlay,
   onPause,
-  onSeek
+  onSeek,
+  externalIsPlaying,
+  seekToTime
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -33,28 +37,67 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Handle video load
   useEffect(() => {
-    if (file && videoRef.current) {
-      setIsLoading(true)
-      setError(null)
-      
-      const video = videoRef.current
-      
-      video.onloadedmetadata = () => {
-        setDuration(video.duration)
-        setIsLoading(false)
-        onLoadedMetadata?.(video.duration)
-      }
-      
-      video.onerror = () => {
-        setError('Failed to load video')
-        setIsLoading(false)
-      }
-      
-      video.oncanplay = () => {
+    if (!file || !videoRef.current) return
+    
+    const video = videoRef.current
+    console.log('Loading video file:', { name: file.name, path: file.path, duration: file.duration })
+    
+    setIsLoading(true)
+    setError(null)
+    
+    // If we already have duration from file metadata, use it immediately
+    if (file.duration) {
+      setDuration(file.duration)
+      console.log('Set duration from file metadata:', file.duration)
+    }
+    
+    const handleLoadedMetadata = () => {
+      const videoDuration = video.duration
+      console.log('Video metadata loaded, duration:', videoDuration)
+      setDuration(videoDuration)
+      setIsLoading(false)
+      onLoadedMetadata?.(videoDuration)
+    }
+    
+    const handleError = (e: Event) => {
+      console.error('Video error:', e)
+      setError('Failed to load video')
+      setIsLoading(false)
+    }
+    
+    const handleLoadedData = () => {
+      console.log('Video data loaded')
+      setIsLoading(false)
+    }
+    
+    const handleCanPlay = () => {
+      console.log('Video can play')
+      setIsLoading(false)
+    }
+    
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
+    video.addEventListener('error', handleError)
+    video.addEventListener('loadeddata', handleLoadedData)
+    video.addEventListener('canplay', handleCanPlay)
+    
+    // Only load if src changed
+    if (video.src !== file.path) {
+      video.src = file.path
+      video.load()
+    } else {
+      // If already loaded, just set loading to false
+      if (video.readyState >= 1) {
         setIsLoading(false)
       }
     }
-  }, [file, onLoadedMetadata])
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      video.removeEventListener('error', handleError)
+      video.removeEventListener('loadeddata', handleLoadedData)
+      video.removeEventListener('canplay', handleCanPlay)
+    }
+  }, [file?.id]) // Only re-run when file ID changes
 
   // Handle time updates
   useEffect(() => {
@@ -70,6 +113,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     video.addEventListener('timeupdate', handleTimeUpdate)
     return () => video.removeEventListener('timeupdate', handleTimeUpdate)
   }, [onTimeUpdate])
+
+  // Handle external play/pause control
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || externalIsPlaying === undefined) return
+
+    if (externalIsPlaying && video.paused) {
+      video.play()
+      setIsPlaying(true)
+    } else if (!externalIsPlaying && !video.paused) {
+      video.pause()
+      setIsPlaying(false)
+    }
+  }, [externalIsPlaying])
+
+  // Handle external seek control
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || seekToTime === undefined) return
+
+    // Only seek if the time is significantly different (avoid loops)
+    if (Math.abs(video.currentTime - seekToTime) > 0.1) {
+      video.currentTime = seekToTime
+      setCurrentTime(seekToTime)
+    }
+  }, [seekToTime])
 
   const handlePlayPause = useCallback(() => {
     const video = videoRef.current
@@ -164,29 +233,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }
 
   return (
-    <div className={`bg-black rounded-lg overflow-hidden ${className}`}>
+    <div className={`bg-black rounded-lg overflow-hidden flex flex-col ${className}`}>
       {/* Video Element */}
-      <div className="relative">
+      <div className="relative flex-1 flex items-center justify-center bg-black min-h-0">
         <video
           ref={videoRef}
-          className="w-full h-full"
+          key={file.path}
+          src={file.path}
+          className="w-full h-full object-contain"
           preload="metadata"
-          poster="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIFZpZGVvPC90ZXh0Pjwvc3ZnPg=="
         >
-          <source src={`placeholder-${file.id}`} type={`video/${file.format}`} />
           Your browser does not support the video tag.
         </video>
 
         {/* Loading Overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        {isLoading && !isPlaying && (
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mb-4"></div>
+              <p className="text-white text-lg font-semibold">Loading video...</p>
+            </div>
           </div>
         )}
 
         {/* Error Overlay */}
         {error && (
-          <div className="absolute inset-0 bg-red-900 bg-opacity-75 flex items-center justify-center">
+          <div className="absolute inset-0 bg-red-900 bg-opacity-75 flex items-center justify-center z-10">
             <div className="text-center text-white">
               <div className="text-4xl mb-2">⚠️</div>
               <p className="text-lg font-medium">{error}</p>
@@ -197,10 +269,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Play Button Overlay */}
         {!isPlaying && !isLoading && !error && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <button
               onClick={handlePlayPause}
-              className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full p-4 transition-all"
+              className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full p-4 transition-all pointer-events-auto"
             >
               <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
@@ -210,22 +282,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
       </div>
 
-      {/* Enhanced Playback Controls */}
-      <PlaybackControls
-        isPlaying={isPlaying}
-        currentTime={currentTime}
-        duration={duration}
-        volume={volume}
-        isMuted={isMuted}
-        playbackRate={playbackRate}
-        onPlayPause={handlePlayPause}
-        onSeek={handleSeek}
-        onVolumeChange={handleVolumeChange}
-        onMuteToggle={handleMuteToggle}
-        onFullscreen={handleFullscreen}
-        onFrameStep={handleFrameStep}
-        onPlaybackRateChange={handlePlaybackRateChange}
-      />
+      {/* Enhanced Playback Controls - Outside video area */}
+      <div className="flex-shrink-0">
+        <PlaybackControls
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          duration={duration}
+          volume={volume}
+          isMuted={isMuted}
+          playbackRate={playbackRate}
+          onPlayPause={handlePlayPause}
+          onSeek={handleSeek}
+          onVolumeChange={handleVolumeChange}
+          onMuteToggle={handleMuteToggle}
+          onFullscreen={handleFullscreen}
+          onFrameStep={handleFrameStep}
+          onPlaybackRateChange={handlePlaybackRateChange}
+        />
+      </div>
     </div>
   )
 }
