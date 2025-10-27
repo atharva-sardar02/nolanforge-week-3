@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback } from 'react'
 import { formatDuration } from '../utils/fileUtils'
 
 interface TrimControlsProps {
@@ -30,9 +30,6 @@ const TrimControls: React.FC<TrimControlsProps> = ({
   onResetTrim,
   className = ''
 }) => {
-  const [isDraggingStart, setIsDraggingStart] = useState(false)
-  const [isDraggingEnd, setIsDraggingEnd] = useState(false)
-
   const trimDuration = trimEnd - trimStart
   const isValid = trimStart < trimEnd && trimEnd > 0
 
@@ -45,22 +42,6 @@ const TrimControls: React.FC<TrimControlsProps> = ({
     const time = parseFloat(e.target.value)
     onTrimEndChange(time)
   }, [onTrimEndChange])
-
-  const handleTrimStartDragStart = useCallback(() => {
-    setIsDraggingStart(true)
-  }, [])
-
-  const handleTrimStartDragEnd = useCallback(() => {
-    setIsDraggingStart(false)
-  }, [])
-
-  const handleTrimEndDragStart = useCallback(() => {
-    setIsDraggingEnd(true)
-  }, [])
-
-  const handleTrimEndDragEnd = useCallback(() => {
-    setIsDraggingEnd(false)
-  }, [])
 
   return (
     <div className={`glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-8 shadow-2xl ${className}`}>
@@ -113,10 +94,6 @@ const TrimControls: React.FC<TrimControlsProps> = ({
               step="0.1"
               value={trimStart}
               onChange={handleTrimStartChange}
-              onMouseDown={handleTrimStartDragStart}
-              onMouseUp={handleTrimStartDragEnd}
-              onTouchStart={handleTrimStartDragStart}
-              onTouchEnd={handleTrimStartDragEnd}
               className="w-full h-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-full appearance-none cursor-pointer"
               style={{
                 background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(trimStart / duration) * 100}%, #374151 ${(trimStart / duration) * 100}%, #374151 100%)`
@@ -140,10 +117,6 @@ const TrimControls: React.FC<TrimControlsProps> = ({
               step="0.1"
               value={trimEnd}
               onChange={handleTrimEndChange}
-              onMouseDown={handleTrimEndDragStart}
-              onMouseUp={handleTrimEndDragEnd}
-              onTouchStart={handleTrimEndDragStart}
-              onTouchEnd={handleTrimEndDragEnd}
               className="w-full h-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-full appearance-none cursor-pointer"
               style={{
                 background: `linear-gradient(to right, #9333ea 0%, #9333ea ${(trimEnd / duration) * 100}%, #374151 ${(trimEnd / duration) * 100}%, #374151 100%)`

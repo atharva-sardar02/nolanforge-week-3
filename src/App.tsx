@@ -1,15 +1,11 @@
-import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import Uploader from "./routes/Uploader";
 import Editor from "./routes/Editor";
 import Recorder from "./routes/Recorder";
 import Navbar from "./components/Navbar";
-import { useAppState } from "./state/appState";
 
 function App() {
-  const { sidebarCollapsed } = useAppState();
 
   return (
     <Router>

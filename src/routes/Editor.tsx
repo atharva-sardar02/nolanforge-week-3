@@ -22,7 +22,6 @@ const Editor: React.FC = () => {
     currentTime,
     trimStart,
     trimEnd,
-    getTrimDuration,
     isTrimValid,
     isPlaying
   } = useEditState()
@@ -98,17 +97,18 @@ const Editor: React.FC = () => {
     if (!currentFile) return
 
     try {
-      let inputPath = currentFile.originalPath
+      let inputPath: string | undefined = currentFile.originalPath
       
       // If we don't have the original path, ask user to select the file
       if (!inputPath) {
         alert('📁 Step 1: Please select the original video file from your computer')
-        inputPath = await selectInputPath()
+        const selectedPath = await selectInputPath()
         
-        if (!inputPath) {
+        if (!selectedPath) {
           // User cancelled
           return
         }
+        inputPath = selectedPath
       }
 
       // Ask where to save the output
@@ -192,7 +192,7 @@ const Editor: React.FC = () => {
                 </div>
                 <div className="flex-1 relative w-full overflow-hidden">
                   <VideoPlayer
-                    file={currentFile}
+                    file={currentFile ?? undefined}
                     className="absolute inset-0 w-full h-full"
                     onTimeUpdate={handleTimeUpdate}
                     onLoadedMetadata={handleLoadedMetadata}

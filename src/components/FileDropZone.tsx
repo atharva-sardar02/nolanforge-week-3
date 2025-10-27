@@ -98,21 +98,6 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
     onFilesAdded?.(videoFiles)
   }, [onFilesAdded, setError, setLoading])
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    const videoFiles = files.filter(file => 
-      file.type.startsWith('video/') && 
-      (file.type.includes('mp4') || file.type.includes('mov') || file.type.includes('avi'))
-    )
-
-    if (videoFiles.length > 0) {
-      setLoading(true)
-      onFilesAdded?.(videoFiles)
-    }
-
-    e.target.value = ''
-  }, [onFilesAdded, setLoading])
-
   const handleClick = useCallback(() => {
     // Use Tauri's file dialog which gives us the actual file path
     handleTauriFileOpen()

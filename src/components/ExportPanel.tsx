@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { formatDuration } from '../utils/fileUtils'
 
 interface ExportPanelProps {

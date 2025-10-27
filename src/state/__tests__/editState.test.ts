@@ -42,10 +42,11 @@ describe('editState', () => {
         name: 'test.mp4',
         path: '/test.mp4',
         size: 1000,
-        type: 'video/mp4',
+        type: 'video' as const,
         duration: 120,
         format: 'mp4',
-        createdAt: new Date()
+        createdAt: new Date(),
+        lastModified: new Date()
       }
 
       act(() => {
@@ -318,10 +319,11 @@ describe('editState', () => {
         name: 'test.mp4',
         path: '/test.mp4',
         size: 1000,
-        type: 'video/mp4',
+        type: 'video' as const,
         duration: 120,
         format: 'mp4',
-        createdAt: new Date()
+        createdAt: new Date(),
+        lastModified: new Date()
       }
 
       // Load file

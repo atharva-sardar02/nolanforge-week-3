@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useEditState } from '../state/editState'
 
 /**
@@ -7,7 +7,6 @@ import { useEditState } from '../state/editState'
  */
 export function useTimelineSync(videoRef: React.RefObject<HTMLVideoElement | null>) {
   const {
-    currentTime,
     trimStart,
     trimEnd,
     isPlaying,
@@ -16,8 +15,6 @@ export function useTimelineSync(videoRef: React.RefObject<HTMLVideoElement | nul
     setTrimEnd,
     setPlaying,
   } = useEditState()
-
-  const animationFrameRef = useRef<number>()
 
   // Sync video element time with state
   useEffect(() => {

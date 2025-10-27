@@ -696,16 +696,17 @@ Set up Tauri configuration for production builds.
 - `src-tauri/Cargo.toml` (edit: optimize settings)
 
 **Tasks checklist:**
-- [ ] Update productName to "NolanForge"
-- [ ] Set proper app identifier
-- [ ] Configure build settings for optimization
-- [ ] Set up code signing (if needed)
-- [ ] Configure bundle settings
+- [x] Update productName to "NolanForge"
+- [x] Set proper app identifier
+- [x] Configure build settings for optimization
+- [x] Set up code signing (if needed)
+- [x] Configure bundle settings
 
 **Acceptance criteria to merge PR6.1:**
-- Tauri configuration is production-ready
-- App identifier is properly set
-- Build settings are optimized
+- [x] Tauri configuration is production-ready
+- [x] App identifier is properly set
+- [x] Build settings are optimized
+- [x] Production installers built successfully (.msi and .exe)
 
 ---
 
