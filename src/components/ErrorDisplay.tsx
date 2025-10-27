@@ -14,24 +14,25 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   if (!error) return null
 
   return (
-    <div className={`bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 ${className}`}>
+    <div className={`glass rounded-3xl border-2 border-red-500/50 backdrop-blur-xl p-6 bg-gradient-to-br from-red-500/10 to-red-600/5 shadow-glow animate-slide-in ${className}`}>
       <div className="flex items-start">
-        <div className="flex-shrink-0">
-          <div className="text-red-500 text-xl">⚠️</div>
+        <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-red-500/20 flex items-center justify-center text-3xl shadow-lg mr-4">
+          ⚠️
         </div>
-        <div className="ml-3 flex-1">
-          <p className="text-red-700 dark:text-red-400 text-sm font-medium">
+        <div className="flex-1">
+          <h4 className="text-red-300 font-bold text-lg mb-1">Error</h4>
+          <p className="text-red-200 font-medium">
             {error}
           </p>
         </div>
         {onDismiss && (
-          <div className="ml-3 flex-shrink-0">
+          <div className="ml-4 flex-shrink-0">
             <button
               onClick={onDismiss}
-              className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
+              className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-xl transition-all duration-200 hover:scale-110"
+              title="Dismiss"
             >
-              <span className="sr-only">Dismiss</span>
-              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
@@ -54,20 +55,20 @@ export const WarningDisplay: React.FC<WarningDisplayProps> = ({
   if (warnings.length === 0) return null
 
   return (
-    <div className={`bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 ${className}`}>
+    <div className={`glass rounded-3xl border-2 border-yellow-500/50 backdrop-blur-xl p-6 bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 shadow-glow animate-slide-in ${className}`}>
       <div className="flex items-start">
-        <div className="flex-shrink-0">
-          <div className="text-yellow-500 text-xl">⚠️</div>
+        <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-yellow-500/20 flex items-center justify-center text-3xl shadow-lg mr-4">
+          ⚠️
         </div>
-        <div className="ml-3 flex-1">
-          <h3 className="text-yellow-700 dark:text-yellow-400 text-sm font-medium mb-2">
-            Warnings:
-          </h3>
-          <ul className="text-yellow-600 dark:text-yellow-300 text-sm space-y-1">
+        <div className="flex-1">
+          <h4 className="text-yellow-300 font-bold text-lg mb-3">
+            {warnings.length === 1 ? 'Warning' : `${warnings.length} Warnings`}
+          </h4>
+          <ul className="space-y-2">
             {warnings.map((warning, index) => (
               <li key={index} className="flex items-start">
-                <span className="mr-2">•</span>
-                <span>{warning}</span>
+                <span className="text-yellow-400 mr-3 mt-1">•</span>
+                <span className="text-yellow-200 font-medium flex-1">{warning}</span>
               </li>
             ))}
           </ul>

@@ -17,13 +17,11 @@ const Uploader: React.FC = () => {
     try {
       const validation = validateMultipleFiles(files)
       
-      // Show warnings if any
       if (validation.warnings.length > 0) {
         const allWarnings = validation.warnings.flatMap(w => w.warnings)
         setWarnings(allWarnings)
       }
       
-      // Show errors for invalid files
       if (validation.invalidFiles.length > 0) {
         const errorMessages = validation.invalidFiles.map(({ file, error }) => 
           `${file.name}: ${error}`
@@ -31,13 +29,11 @@ const Uploader: React.FC = () => {
         setError(errorMessages.join('; '))
       }
       
-      // Process valid files
       for (const file of validation.validFiles) {
         const mediaFile = createMediaFile(file)
         addFile(mediaFile)
       }
       
-      // Show summary
       if (validation.validFiles.length > 0) {
         const summary = `Successfully imported ${validation.validFiles.length} file(s)`
         if (validation.invalidFiles.length > 0) {
@@ -60,54 +56,43 @@ const Uploader: React.FC = () => {
     clearError()
   }, [clearError])
 
-  const handleDismissWarnings = useCallback(() => {
-    setWarnings([])
-  }, [])
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            📁 Uploader
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Import and organize your video files
-          </p>
-        </div>
-        
-        {/* Error and Warning Display */}
-        <div className="mb-6 space-y-4">
-          <ErrorDisplay 
-            error={useMediaStore.getState().error} 
-            onDismiss={handleDismissError}
-          />
-          <WarningDisplay 
-            warnings={warnings}
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* File Drop Zone */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Import Files
-            </h2>
-            <FileDropZone onFilesAdded={handleFilesAdded} />
-          </div>
+    <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+      {/* Content with Modern Spacing */}
+      <div className="flex-1 overflow-auto p-12 bg-gradient-to-br from-gray-950 to-gray-900">
+        <div className="w-full h-full space-y-8">
+          {/* Error and Warning Display */}
+          {(useMediaStore.getState().error || warnings.length > 0) && (
+            <div className="space-y-4 animate-slide-in">
+              <ErrorDisplay 
+                error={useMediaStore.getState().error} 
+                onDismiss={handleDismissError}
+              />
+              <WarningDisplay warnings={warnings} />
+            </div>
+          )}
           
-          {/* Media Library */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 lg:col-span-2">
-            <MediaLibrary />
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-10 h-full">
+            {/* File Drop Zone - Takes 2 columns */}
+            <div className="xl:col-span-2 animate-fade-in">
+              <div className="sticky top-0">
+                <FileDropZone onFilesAdded={handleFilesAdded} />
+              </div>
+            </div>
+            
+            {/* Media Library - Takes 3 columns */}
+            <div className="xl:col-span-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <MediaLibrary />
+            </div>
           </div>
-        </div>
 
-        {/* File Management */}
-        {files.length > 0 && (
-          <div className="mt-8">
-            <FileManagement />
-          </div>
-        )}
+          {/* File Management */}
+          {files.length > 0 && (
+            <div className="mt-8 animate-slide-in">
+              <FileManagement />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

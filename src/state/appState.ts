@@ -23,7 +23,7 @@ interface AppState {
 export const useAppState = create<AppState>((set, get) => ({
   // Initial state
   activeRoute: '/uploader',
-  theme: 'system',
+  theme: 'dark',
   sidebarCollapsed: false,
 
   // Actions

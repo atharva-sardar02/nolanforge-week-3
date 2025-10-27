@@ -28,20 +28,23 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       case 'danger':
         return {
           icon: '⚠️',
-          confirmButton: 'bg-red-500 hover:bg-red-600 text-white',
-          iconColor: 'text-red-500'
+          confirmButton: 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-glow',
+          iconBg: 'bg-gradient-to-br from-red-500/30 to-red-600/30',
+          borderColor: 'border-red-500/30'
         }
       case 'warning':
         return {
           icon: '⚠️',
-          confirmButton: 'bg-yellow-500 hover:bg-yellow-600 text-white',
-          iconColor: 'text-yellow-500'
+          confirmButton: 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-glow',
+          iconBg: 'bg-gradient-to-br from-yellow-500/30 to-yellow-600/30',
+          borderColor: 'border-yellow-500/30'
         }
       default:
         return {
           icon: 'ℹ️',
-          confirmButton: 'bg-blue-500 hover:bg-blue-600 text-white',
-          iconColor: 'text-blue-500'
+          confirmButton: 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-glow',
+          iconBg: 'bg-gradient-to-br from-blue-500/30 to-blue-600/30',
+          borderColor: 'border-blue-500/30'
         }
     }
   }
@@ -49,35 +52,37 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   const styles = getVariantStyles()
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div className="p-6">
-          <div className="flex items-start">
-            <div className={`text-2xl mr-3 ${styles.iconColor}`}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div className={`glass rounded-3xl border ${styles.borderColor} backdrop-blur-xl shadow-2xl max-w-md w-full animate-scale-in`}>
+        <div className="p-8">
+          <div className="flex items-start mb-6">
+            <div className={`w-16 h-16 rounded-2xl ${styles.iconBg} flex items-center justify-center text-4xl shadow-lg mr-4 flex-shrink-0`}>
               {styles.icon}
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              <h3 className="text-2xl font-bold text-white mb-3">
                 {title}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-300 text-base leading-relaxed">
                 {message}
               </p>
             </div>
           </div>
           
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="flex gap-4">
             <button
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+              className="flex-1 relative overflow-hidden bg-gradient-to-r from-gray-600/20 to-gray-700/20 hover:from-gray-600/30 hover:to-gray-700/30 border border-gray-500/30 hover:border-gray-400/60 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 hover:scale-105 group"
             >
-              {cancelText}
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-600/10 to-gray-700/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 text-lg">{cancelText}</span>
             </button>
             <button
               onClick={onConfirm}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${styles.confirmButton}`}
+              className={`flex-1 relative overflow-hidden ${styles.confirmButton} font-bold py-4 px-6 rounded-2xl transition-all duration-300 hover:scale-105 group`}
             >
-              {confirmText}
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 text-lg">{confirmText}</span>
             </button>
           </div>
         </div>

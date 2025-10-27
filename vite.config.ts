@@ -29,4 +29,17 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  // Force cache busting
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  // Disable cache
+  cacheDir: '.vite',
+  optimizeDeps: {
+    force: true,
+  },
 }));
