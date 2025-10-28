@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { MediaFile } from '../state/mediaStore'
 import { TimelineClip } from '../state/editState'
-import { VideoComposer, TrackComposition, createTrackComposition } from '../utils/videoComposition'
+import { VideoComposer, createTrackComposition } from '../utils/videoComposition'
 import PlaybackControls from './PlaybackControls'
 
 interface MultiTrackVideoPlayerProps {
@@ -34,9 +34,8 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const composerRef = useRef<VideoComposer | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const animationFrameRef = useRef<number | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, _setIsLoading] = useState(false)
+  const [error, _setError] = useState<string | null>(null)
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
@@ -167,7 +166,7 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
     const interval = setInterval(() => {
       const newTime = currentTime + 0.1 // Advance by 100ms
       if (newTime <= totalDuration) {
-        onTimeUpdate?.(newTime)
+        onTimeUpdate?.(newTime, totalDuration)
       } else {
         onEnded?.()
       }
@@ -194,7 +193,7 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
       )
 
       // Always compose - even during gaps (empty compositions array)
-      composerRef.current.compose(compositions, currentTime, isPlaying)
+      composerRef.current?.compose(compositions, currentTime, isPlaying)
     }, 16) // Throttle to ~60fps (16ms)
 
     return () => clearTimeout(timeoutId)

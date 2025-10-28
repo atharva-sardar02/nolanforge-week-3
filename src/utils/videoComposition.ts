@@ -29,7 +29,7 @@ export class VideoComposer {
   private ctx: CanvasRenderingContext2D
   private videoElements: Map<string, HTMLVideoElement> = new Map()
   private options: VideoCompositionOptions
-  private lastCompositionTime: number = -1
+  // private _lastCompositionTime: number = -1  // Unused variable
 
   constructor(canvas: HTMLCanvasElement, options: VideoCompositionOptions) {
     this.canvas = canvas
@@ -71,10 +71,10 @@ export class VideoComposer {
         video.setAttribute('muted', 'true')
         video.setAttribute('volume', '0')
         
-        // Try to disable audio tracks
-        if (video.audioTracks) {
+        // Try to disable audio tracks (if available)
+        if ('audioTracks' in video && video.audioTracks && Array.isArray(video.audioTracks)) {
           for (let i = 0; i < video.audioTracks.length; i++) {
-            video.audioTracks[i].enabled = false
+            (video.audioTracks as any)[i].enabled = false
           }
         }
       }
@@ -114,9 +114,9 @@ export class VideoComposer {
     video.setAttribute('volume', '0')
     
     // Disable audio tracks if possible
-    if (video.audioTracks) {
+    if ('audioTracks' in video && video.audioTracks && Array.isArray(video.audioTracks)) {
       for (let i = 0; i < video.audioTracks.length; i++) {
-        video.audioTracks[i].enabled = false
+        (video.audioTracks as any)[i].enabled = false
       }
     }
     
@@ -157,7 +157,7 @@ export class VideoComposer {
     console.log('🔥 FORCE RELOAD - Time diff check removed!')
     
     // Update last composition time for reference
-    this.lastCompositionTime = globalTime
+    // this.lastCompositionTime = globalTime  // Commented out unused variable
     console.log('✅ Proceeding with composition - NO TIME DIFF CHECK')
 
     // Only clear canvas if we have tracks to render
@@ -304,7 +304,7 @@ export class VideoComposer {
         
         // Set composition properties
         this.ctx.globalAlpha = track.opacity
-        this.ctx.globalCompositeOperation = track.blendMode
+        this.ctx.globalCompositeOperation = track.blendMode as GlobalCompositeOperation
         
         // Draw video frame
         this.ctx.drawImage(

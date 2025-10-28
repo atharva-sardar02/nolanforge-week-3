@@ -268,7 +268,10 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
       {!isRecording && (
         <div className="space-y-4">
           {/* Debug info */}
-          {console.log('🔍 Rendering buttons - isRecording:', isRecording, 'isStopping:', isStopping, 'recordedBlob:', !!recordedBlob)}
+          {(() => {
+            console.log('🔍 Rendering buttons - isRecording:', isRecording, 'isStopping:', isStopping, 'recordedBlob:', !!recordedBlob)
+            return null
+          })()}
           
           {/* Show loading state when stopping but blob not ready yet */}
           {isStopping && !recordedBlob && (

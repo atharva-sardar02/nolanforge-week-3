@@ -6,7 +6,7 @@ import PreviewWebcam from '../components/PreviewWebcam'
 import ScreenCapture from '../components/ScreenCapture'
 import CombinedCapture from '../components/CombinedCapture'
 import RecorderControls from '../components/RecorderControls'
-import { createMediaFileFromRecording, downloadRecording, generateRecordingFileName, formatFileSize, saveRecordingToDisk, saveRecordingToDownloads } from '../utils/recordingUtils'
+import { downloadRecording, generateRecordingFileName, formatFileSize, saveRecordingToDisk, saveRecordingToDownloads } from '../utils/recordingUtils'
 
 const Recorder: React.FC = () => {
   const [recordingMode, setRecordingMode] = useState<'idle' | 'webcam' | 'screen' | 'combined'>('idle')
@@ -16,8 +16,7 @@ const Recorder: React.FC = () => {
   const [selectedTrackId, setSelectedTrackId] = useState(0)
   
   const { addFile } = useMediaStore()
-  const { settings, resetRecording, duration } = useRecordingState()
-  const { addClipToTimeline, getTotalDuration } = useEditState()
+  const { settings, duration } = useRecordingState()
   
   // Handle recording start
   const handleRecordingStart = () => {

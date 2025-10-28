@@ -155,7 +155,7 @@ export const generateVideoThumbnail = (
     video.oncanplay = () => {
       // Video is ready to play, metadata should be loaded
       if (video.duration && !resolved) {
-        video.onloadedmetadata?.()
+        video.onloadedmetadata?.(new Event('loadedmetadata'))
       }
     }
     

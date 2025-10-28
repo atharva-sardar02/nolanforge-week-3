@@ -23,7 +23,7 @@ const TrackRow: React.FC<TrackRowProps> = ({
   clips,
   mediaFiles,
   selectedClipId,
-  currentTime,
+  currentTime: _currentTime,
   totalDuration,
   pixelsPerSecond,
   onClipSelect,

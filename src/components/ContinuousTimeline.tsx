@@ -16,7 +16,7 @@ interface TimelineProps {
   globalTrimEnd: number | null
   pixelsPerSecond?: number
   onClipSelect: (clipId: string | null) => void
-  onClipMove: (clipId: string, newStartTime: number) => void
+  onClipMove: (clipId: string, newTrackId: number, newStartTime: number) => void
   onClipRemove: (clipId: string) => void
   onSeek: (time: number) => void
   onGlobalTrimStartChange: (time: number) => void
@@ -130,7 +130,7 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
 
     const handleScroll = () => {
       // Force re-render of timeline content to sync with ruler scroll
-      const timelineContent = container.parentElement?.querySelector('.flex-1.relative.overflow-hidden > div')
+      const timelineContent = container.parentElement?.querySelector('.flex-1.relative.overflow-hidden > div') as HTMLElement
       if (timelineContent) {
         timelineContent.style.left = `-${container.scrollLeft}px`
       }
@@ -222,7 +222,11 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
       onGlobalTrimEndChange(newTime)
     } else if (dragType === 'clip' && draggedClipId) {
       const newTime = Math.max(0, Math.min(totalDuration, dragStartTime + deltaTime))
-      onClipMove(draggedClipId, newTime)
+      // Find the clip to get its current track
+      const clip = clips.find(c => c.id === draggedClipId)
+      if (clip) {
+        onClipMove(draggedClipId, clip.trackId, newTime)
+      }
     }
   }, [isDragging, isDraggingPlayhead, dragType, dragStartX, dragStartTime, draggedClipId, pixelsPerSecondValue, totalDuration, globalTrimStart, globalTrimEnd, onSeek, onGlobalTrimStartChange, onGlobalTrimEndChange, onClipMove])
 

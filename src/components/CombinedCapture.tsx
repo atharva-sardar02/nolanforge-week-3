@@ -24,7 +24,7 @@ const CombinedCapture: React.FC<CombinedCaptureProps> = ({
   const [combinedStream, setCombinedStream] = useState<MediaStream | null>(null)
 
   // Create canvas-based combined stream
-  const createCanvasStream = (screenStream: MediaStream, webcamStream: MediaStream): MediaStream => {
+  const createCanvasStream = (_screenStream: MediaStream, _webcamStream: MediaStream): MediaStream => {
     const canvas = canvasRef.current
     if (!canvas) throw new Error('Canvas not available')
 

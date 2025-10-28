@@ -39,7 +39,7 @@ const Editor: React.FC = () => {
 
   const [currentDisplayClip, setCurrentDisplayClip] = useState<any>(null)
   const [localTime, setLocalTime] = useState(0)
-  const [multiTrackMode, setMultiTrackMode] = useState(false)
+  const [multiTrackMode, setMultiTrackMode] = useState(true)
   const [showTranscriptionPanel, setShowTranscriptionPanel] = useState(false)
   const [showSettingsPanel, setShowSettingsPanel] = useState(false)
 
@@ -733,7 +733,9 @@ const Editor: React.FC = () => {
                 globalTrimEnd={globalTrimEnd}
                 pixelsPerSecond={zoomLevel}
                 onClipSelect={selectClip}
-                onClipMove={(clipId, newTrackId, newStartTime) => moveClip(clipId, newTrackId, newStartTime)}
+                onClipMove={(clipId: string, newTrackId: number, newStartTime: number) => {
+                  moveClip(clipId, newTrackId, newStartTime)
+                }}
                 onClipRemove={removeClipFromTimeline}
                 onSeek={handleContinuousTimelineSeek}
                 onGlobalTrimStartChange={setGlobalTrimStart}
