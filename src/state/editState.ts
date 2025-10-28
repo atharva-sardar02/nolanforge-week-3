@@ -21,6 +21,10 @@ export interface EditState {
   isPlaying: boolean
   currentTime: number // Global timeline time
   
+  // Global export trim (for exporting a range across multiple clips)
+  globalTrimStart: number // Global timeline trim start
+  globalTrimEnd: number | null // Global timeline trim end (null = end of timeline)
+  
   // Timeline view settings
   zoomLevel: number // Pixels per second
   scrollPosition: number // Horizontal scroll
@@ -44,6 +48,11 @@ export interface EditState {
   updateClipDuration: (clipId: string, duration: number) => void
   splitClipAtPlayhead: () => void
   clearTimeline: () => void
+  
+  // Global trim actions
+  setGlobalTrimStart: (time: number) => void
+  setGlobalTrimEnd: (time: number | null) => void
+  resetGlobalTrim: () => void
   
   // Timeline view actions
   setZoomLevel: (zoom: number) => void
@@ -75,6 +84,8 @@ export const useEditState = create<EditState>((set, get) => ({
   selectedClipId: null,
   isPlaying: false,
   currentTime: 0,
+  globalTrimStart: 0,
+  globalTrimEnd: null,
   zoomLevel: 50, // 50 pixels per second default
   scrollPosition: 0,
   snapToGrid: true,
@@ -206,7 +217,49 @@ export const useEditState = create<EditState>((set, get) => ({
     set({ 
       timelineClips: [],
       selectedClipId: null,
-      currentTime: 0
+      currentTime: 0,
+      globalTrimStart: 0,
+      globalTrimEnd: null
+    })
+  },
+
+  // Global trim actions
+  setGlobalTrimStart: (time: number) => {
+    const { globalTrimEnd, getTotalDuration } = get()
+    const totalDuration = getTotalDuration()
+    const clampedTime = Math.max(0, Math.min(time, totalDuration))
+    
+    // Ensure start doesn't exceed end
+    if (globalTrimEnd !== null && clampedTime >= globalTrimEnd) {
+      set({ globalTrimStart: globalTrimEnd - 0.1 })
+    } else {
+      set({ globalTrimStart: clampedTime })
+    }
+  },
+
+  setGlobalTrimEnd: (time: number | null) => {
+    const { globalTrimStart, getTotalDuration } = get()
+    const totalDuration = getTotalDuration()
+    
+    if (time === null) {
+      set({ globalTrimEnd: null })
+    } else {
+      const clampedTime = Math.max(0, Math.min(time, totalDuration))
+      
+      // Ensure end doesn't go before start
+      if (clampedTime <= globalTrimStart) {
+        set({ globalTrimEnd: globalTrimStart + 0.1 })
+      } else {
+        set({ globalTrimEnd: clampedTime })
+      }
+    }
+  },
+
+  resetGlobalTrim: () => {
+    const { getTotalDuration } = get()
+    set({ 
+      globalTrimStart: 0,
+      globalTrimEnd: getTotalDuration()
     })
   },
 

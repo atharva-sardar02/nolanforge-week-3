@@ -29,13 +29,13 @@ NolanForge addresses the need for a **lightweight, offline desktop video editor*
 - **Pain Point**: Don't want to learn complex software
 
 ## How It Should Work
-1. **Seamless Module Switching**: Users move between Uploader/Editor/Recorder without losing context
-2. **Drag-and-Drop**: Intuitive file import with visual feedback
-3. **Real-time Preview**: See changes immediately in video player
-4. **Simple Timeline**: Visual representation of trim points
-5. **One-Click Export**: Export trimmed clips with minimal configuration
+1. **Seamless Module Switching**: Users move between Uploader/Editor/Recorder without losing context ✅
+2. **Drag-and-Drop**: Intuitive file import with visual feedback ✅
+3. **Multi-Clip Timeline**: Visual timeline with multiple clips, global trim handles, and continuous playback ✅
+4. **Real-time Preview**: See changes immediately in video player with seamless transitions ✅
+5. **Advanced Export**: Export single clips or multi-clip compositions with global trim range ✅
 6. **AI Transcription**: Automatically generate subtitles and enable text-based editing
-7. **Sub-PR Development**: Manageable development chunks for rapid iteration
+7. **Sub-PR Development**: Manageable development chunks for rapid iteration ✅
 
 ## User Experience Goals
 - **Fast**: Quick startup and responsive UI

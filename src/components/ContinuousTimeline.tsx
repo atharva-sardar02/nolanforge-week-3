@@ -7,10 +7,14 @@ interface TimelineProps {
   selectedClipId: string | null
   currentTime: number
   totalDuration: number
+  globalTrimStart: number
+  globalTrimEnd: number | null
   onClipSelect: (clipId: string | null) => void
   onClipMove: (clipId: string, newStartTime: number) => void
   onClipRemove: (clipId: string) => void
   onSeek: (time: number) => void
+  onGlobalTrimStartChange: (time: number) => void
+  onGlobalTrimEndChange: (time: number) => void
   className?: string
 }
 
@@ -19,15 +23,20 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
   selectedClipId,
   currentTime,
   totalDuration,
+  globalTrimStart,
+  globalTrimEnd,
   onClipSelect,
   onClipMove,
   onClipRemove,
   onSeek,
+  onGlobalTrimStartChange,
+  onGlobalTrimEndChange,
   className = ''
 }) => {
   const timelineRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [dragType, setDragType] = useState<'clip' | 'playhead' | 'trimStart' | 'trimEnd' | null>(null)
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false)
   const [draggedClipId, setDraggedClipId] = useState<string | null>(null)
   const [dragStartX, setDragStartX] = useState(0)
@@ -105,12 +114,30 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
   const handlePlayheadMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation()
     setIsDraggingPlayhead(true)
+    setDragType('playhead')
     setDragStartX(e.clientX)
+  }
+  
+  const handleTrimStartMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsDragging(true)
+    setDragType('trimStart')
+    setDragStartX(e.clientX)
+    setDragStartTime(globalTrimStart)
+  }
+  
+  const handleTrimEndMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsDragging(true)
+    setDragType('trimEnd')
+    setDragStartX(e.clientX)
+    setDragStartTime(globalTrimEnd || totalDuration)
   }
 
   const handleClipMouseDown = (e: React.MouseEvent, clip: TimelineClip) => {
     e.stopPropagation()
     setIsDragging(true)
+    setDragType('clip')
     setDraggedClipId(clip.id)
     setDragStartX(e.clientX)
     setDragStartTime(clip.startTime)
@@ -118,28 +145,34 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
   }
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDraggingPlayhead) {
-      const deltaX = e.clientX - dragStartX
-      const scrollLeft = scrollContainerRef.current?.scrollLeft || 0
-      const rect = timelineRef.current?.getBoundingClientRect()
-      if (!rect) return
-      
-      const x = e.clientX - rect.left + scrollLeft
-      const time = pixelsToTime(x)
-      onSeek(Math.max(0, Math.min(time, totalDuration)))
+    const rect = timelineRef.current?.getBoundingClientRect()
+    if (!rect) return
+    
+    const scrollLeft = scrollContainerRef.current?.scrollLeft || 0
+    const x = e.clientX - rect.left + scrollLeft
+    const time = pixelsToTime(x)
+    const clampedTime = Math.max(0, Math.min(time, totalDuration))
+    
+    if (dragType === 'playhead') {
+      onSeek(clampedTime)
       setDragStartX(e.clientX)
-    } else if (isDragging && draggedClipId) {
+    } else if (dragType === 'trimStart') {
+      onGlobalTrimStartChange(clampedTime)
+    } else if (dragType === 'trimEnd') {
+      onGlobalTrimEndChange(clampedTime)
+    } else if (dragType === 'clip' && draggedClipId) {
       const deltaX = e.clientX - dragStartX
       const deltaTime = pixelsToTime(deltaX)
       const newTime = Math.max(0, dragStartTime + deltaTime)
       
       onClipMove(draggedClipId, newTime)
     }
-  }, [isDragging, isDraggingPlayhead, draggedClipId, dragStartX, dragStartTime, onClipMove, onSeek, totalDuration])
+  }, [isDragging, isDraggingPlayhead, dragType, draggedClipId, dragStartX, dragStartTime, onClipMove, onSeek, onGlobalTrimStartChange, onGlobalTrimEndChange, totalDuration])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
     setIsDraggingPlayhead(false)
+    setDragType(null)
     setDraggedClipId(null)
   }, [])
 
@@ -233,8 +266,6 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
                 const isSelected = clip.id === selectedClipId
                 const x = timeToPixels(clip.startTime)
                 const width = timeToPixels(clip.duration)
-                const trimStartX = timeToPixels((clip.trimStart / clip.sourceDuration) * clip.duration)
-                const trimEndX = timeToPixels((clip.trimEnd / clip.sourceDuration) * clip.duration)
                 
                 return (
                   <div
@@ -317,6 +348,42 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
                 )
               })}
 
+            {/* Global Trim Start Handle (Blue) */}
+            <div
+              className="absolute top-0 bottom-0 w-1 bg-blue-500 z-40 cursor-ew-resize shadow-lg"
+              style={{ 
+                left: `${timeToPixels(globalTrimStart)}px`,
+                boxShadow: '0 0 10px rgba(59, 130, 246, 0.8)'
+              }}
+              onMouseDown={handleTrimStartMouseDown}
+            >
+              <div 
+                className="absolute -top-3 -left-3 w-6 h-6 bg-blue-500 rounded-full shadow-lg cursor-ew-resize border-2 border-white"
+                onMouseDown={handleTrimStartMouseDown}
+              ></div>
+              <div className="absolute -top-8 left-2 text-xs text-white font-mono font-bold whitespace-nowrap bg-blue-500 px-2 py-1 rounded shadow-lg pointer-events-none">
+                Start: {formatDuration(globalTrimStart)}
+              </div>
+            </div>
+
+            {/* Global Trim End Handle (Purple) */}
+            <div
+              className="absolute top-0 bottom-0 w-1 bg-purple-500 z-40 cursor-ew-resize shadow-lg"
+              style={{ 
+                left: `${timeToPixels(globalTrimEnd || totalDuration)}px`,
+                boxShadow: '0 0 10px rgba(168, 85, 247, 0.8)'
+              }}
+              onMouseDown={handleTrimEndMouseDown}
+            >
+              <div 
+                className="absolute -top-3 -left-3 w-6 h-6 bg-purple-500 rounded-full shadow-lg cursor-ew-resize border-2 border-white"
+                onMouseDown={handleTrimEndMouseDown}
+              ></div>
+              <div className="absolute -top-8 left-2 text-xs text-white font-mono font-bold whitespace-nowrap bg-purple-500 px-2 py-1 rounded shadow-lg pointer-events-none">
+                End: {formatDuration(globalTrimEnd || totalDuration)}
+              </div>
+            </div>
+
             {/* Playhead */}
             <div
               className="absolute top-0 bottom-0 w-1 bg-red-500 z-30 cursor-ew-resize shadow-lg"
@@ -341,16 +408,20 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
         <div className="mt-4 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30">
           <div className="flex items-center justify-center gap-6 text-xs text-gray-400 font-medium">
             <span className="flex items-center gap-2">
-              <span className="text-lg">👆</span>
-              <span>Click clip to select & play</span>
+              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+              <span>Blue = Export start</span>
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
+              <span>Purple = Export end</span>
             </span>
             <span className="flex items-center gap-2">
               <span className="text-lg">🔴</span>
-              <span>Drag red playhead to scrub</span>
+              <span>Red = Playhead</span>
             </span>
             <span className="flex items-center gap-2">
               <span className="w-2 h-4 bg-yellow-400"></span>
-              <span>Yellow = trimmed regions</span>
+              <span>Yellow = Clip trims</span>
             </span>
           </div>
         </div>

@@ -14,12 +14,16 @@ const Editor: React.FC = () => {
     selectedClipId,
     currentTime,
     isPlaying,
+    globalTrimStart,
+    globalTrimEnd,
     setPlaying,
     setCurrentTime,
     selectClip,
     removeClipFromTimeline,
     moveClip,
-    getTotalDuration
+    getTotalDuration,
+    setGlobalTrimStart,
+    setGlobalTrimEnd
   } = useEditState()
 
   const { exportMultiClipVideo, isExporting, error: exportError, success } = useExport()
@@ -128,16 +132,51 @@ const Editor: React.FC = () => {
       const mainTrackClips = timelineClips
         .filter(c => c.trackId === 0)
         .sort((a, b) => a.startTime - b.startTime)
-        
-      const clipsForExport = mainTrackClips.map(clip => {
-        const mediaFile = getFileById(clip.mediaFileId)
-        return {
-          inputPath: mediaFile?.originalPath || '',
-          trimStart: clip.trimStart,
-          trimEnd: clip.trimEnd,
-          mediaFile
-        }
-      })
+      
+      // Use global trim range (default to full timeline if not set)
+      const exportStart = globalTrimStart
+      const exportEnd = globalTrimEnd || totalDuration
+      
+      console.log(`📤 Exporting from ${exportStart}s to ${exportEnd}s (total: ${exportEnd - exportStart}s)`)
+      
+      // Find clips that intersect with the export range
+      const clipsForExport = mainTrackClips
+        .filter(clip => {
+          const clipEnd = clip.startTime + clip.duration
+          // Check if clip intersects with export range
+          return clip.startTime < exportEnd && clipEnd > exportStart
+        })
+        .map(clip => {
+          const mediaFile = getFileById(clip.mediaFileId)
+          const clipEnd = clip.startTime + clip.duration
+          
+          // Calculate how much of this clip falls within the export range
+          const clipExportStart = Math.max(exportStart, clip.startTime)
+          const clipExportEnd = Math.min(exportEnd, clipEnd)
+          
+          // Convert to source video time
+          const timeIntoClip = clipExportStart - clip.startTime
+          const sourceTrimStart = clip.trimStart + timeIntoClip
+          
+          const exportDuration = clipExportEnd - clipExportStart
+          const sourceTrimEnd = sourceTrimStart + exportDuration
+          
+          console.log(`  Clip: ${mediaFile?.name}`)
+          console.log(`    Global range: ${clipExportStart}s - ${clipExportEnd}s`)
+          console.log(`    Source range: ${sourceTrimStart}s - ${sourceTrimEnd}s`)
+          
+          return {
+            inputPath: mediaFile?.originalPath || '',
+            trimStart: sourceTrimStart,
+            trimEnd: sourceTrimEnd,
+            mediaFile
+          }
+        })
+
+      if (clipsForExport.length === 0) {
+        alert('⚠️ No clips in the selected export range')
+        return
+      }
 
       const missingPaths = clipsForExport.filter(c => !c.inputPath)
       if (missingPaths.length > 0) {
@@ -145,6 +184,7 @@ const Editor: React.FC = () => {
         return
       }
 
+      console.log(`📤 Exporting ${clipsForExport.length} clip(s)`)
       await exportMultiClipVideo(clipsForExport)
       
     } catch (error) {
@@ -334,10 +374,14 @@ const Editor: React.FC = () => {
               selectedClipId={selectedClipId}
               currentTime={currentTime}
               totalDuration={totalDuration}
+              globalTrimStart={globalTrimStart}
+              globalTrimEnd={globalTrimEnd}
               onClipSelect={selectClip}
               onClipMove={(clipId, newStartTime) => moveClip(clipId, 0, newStartTime)}
               onClipRemove={removeClipFromTimeline}
               onSeek={handleContinuousTimelineSeek}
+              onGlobalTrimStartChange={setGlobalTrimStart}
+              onGlobalTrimEndChange={setGlobalTrimEnd}
             />
           )}
 
