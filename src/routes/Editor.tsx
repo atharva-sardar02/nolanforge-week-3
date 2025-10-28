@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import VideoPlayer from '../components/VideoPlayer'
 import Timeline from '../components/Timeline'
 import ContinuousTimeline from '../components/ContinuousTimeline'
 import TrimControls from '../components/TrimControls'
+import TimelineTools from '../components/TimelineTools'
 import { useMediaStore } from '../state/mediaStore'
 import { useEditState } from '../state/editState'
 import { useExport } from '../hooks/useExport'
@@ -16,11 +17,13 @@ const Editor: React.FC = () => {
     isPlaying,
     globalTrimStart,
     globalTrimEnd,
+    zoomLevel,
     setPlaying,
     setCurrentTime,
     selectClip,
     removeClipFromTimeline,
     moveClip,
+    splitClipAtPlayhead,
     getTotalDuration,
     setGlobalTrimStart,
     setGlobalTrimEnd
@@ -30,6 +33,36 @@ const Editor: React.FC = () => {
 
   const [currentDisplayClip, setCurrentDisplayClip] = useState<any>(null)
   const [localTime, setLocalTime] = useState(0)
+
+  // Timeline tool handlers
+  const handleSplitClip = useCallback(() => {
+    if (selectedClipId) {
+      splitClipAtPlayhead()
+    }
+  }, [selectedClipId, splitClipAtPlayhead])
+
+  const handleDeleteClip = useCallback(() => {
+    if (selectedClipId) {
+      removeClipFromTimeline(selectedClipId)
+    }
+  }, [selectedClipId, removeClipFromTimeline])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default behavior for our shortcuts
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault()
+        handleSplitClip()
+      } else if (e.key === 'Delete' && selectedClipId) {
+        e.preventDefault()
+        handleDeleteClip()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleSplitClip, handleDeleteClip, selectedClipId])
 
   // Auto-select first clip when clips are added
   useEffect(() => {
@@ -175,7 +208,7 @@ const Editor: React.FC = () => {
 
       if (clipsForExport.length === 0) {
         alert('⚠️ No clips in the selected export range')
-        return
+          return
       }
 
       const missingPaths = clipsForExport.filter(c => !c.inputPath)
@@ -376,12 +409,23 @@ const Editor: React.FC = () => {
               totalDuration={totalDuration}
               globalTrimStart={globalTrimStart}
               globalTrimEnd={globalTrimEnd}
+              pixelsPerSecond={zoomLevel}
               onClipSelect={selectClip}
               onClipMove={(clipId, newStartTime) => moveClip(clipId, 0, newStartTime)}
               onClipRemove={removeClipFromTimeline}
               onSeek={handleContinuousTimelineSeek}
               onGlobalTrimStartChange={setGlobalTrimStart}
               onGlobalTrimEndChange={setGlobalTrimEnd}
+            />
+          )}
+
+          {/* Timeline Tools */}
+          {timelineClips.length > 0 && (
+            <TimelineTools
+              onSplit={handleSplitClip}
+              onDelete={handleDeleteClip}
+              canSplit={!!selectedClipId}
+              canDelete={!!selectedClipId}
             />
           )}
 

@@ -10,7 +10,7 @@ Tauri Shell (Rust Backend)
 └── Recorder Module (React) - ✅ COMPLETE
 ```
 
-### Current Architecture ✅ MVP COMPLETE + MULTI-CLIP TIMELINE + RECORDER MODULE
+### Current Architecture ✅ MVP COMPLETE + MULTI-CLIP TIMELINE + RECORDER MODULE + ADVANCED TIMELINE EDITING
 ```
 React Frontend (TypeScript + Vite)
 ├── App.tsx - Main app with routing
@@ -31,35 +31,45 @@ React Frontend (TypeScript + Vite)
 │   ├── PreviewWebcam.tsx - Webcam preview component ✅
 │   ├── ScreenCapture.tsx - Screen capture with user-triggered sharing ✅
 │   ├── CombinedCapture.tsx - Canvas-based video composition ✅
-│   └── RecorderControls.tsx - Recording controls with save/add options ✅
+│   ├── RecorderControls.tsx - Recording controls with save/add options ✅
+│   ├── SplitButton.tsx - UI button for splitting clips at playhead ✅
+│   ├── DeleteButton.tsx - UI button for removing timeline segments ✅
+│   ├── TimelineTools.tsx - Toolbar with editing tools and shortcuts ✅
+│   ├── TrackLane.tsx - Individual track rendering component ✅
+│   └── Playhead.tsx - Timeline navigation with time display ✅
 ├── State/
 │   ├── appState.ts - Global UI state ✅
 │   ├── mediaStore.ts - Media files ✅
 │   ├── editState.ts - Multi-clip timeline state ✅
-│   └── recordingState.ts - Recording state management ✅
+│   ├── recordingState.ts - Recording state management ✅
+│   └── timelineState.ts - Separate timeline state management ✅
 ├── Hooks/
 │   ├── useExport.ts - Multi-clip export logic ✅
 │   └── useMediaRecorder.ts - MediaRecorder API integration ✅
 └── Utils/
     ├── fileUtils.ts - File operations + blob URLs ✅
     ├── time.ts - Time formatting ✅
-    └── recordingUtils.ts - Recording file handling and blob management ✅
+    ├── recordingUtils.ts - Recording file handling and blob management ✅
+    └── timelineOps.ts - Comprehensive timeline operations utilities ✅
 ```
 
-### Data Flow ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
+### Data Flow ✅ IMPLEMENTED + MULTI-CLIP + RECORDER + ADVANCED TIMELINE EDITING
 1. **Uploader** → Imports files → **MediaStore** (blob URLs + metadata)
 2. **MediaLibrary** → "Edit" button → **addClipToTimeline** → **editState.timelineClips**
 3. **Editor** → **ContinuousTimeline** (all clips) + **Timeline** (selected clip) → **ExportPanel**
 4. **Export** → **globalTrimStart/End** → **FFmpeg** (Rust) → Multi-clip composition
 5. **Recorder** → **MediaRecorder API** → **Canvas Composition** → **Save/Add to Timeline**
+6. **Timeline Editing** → **TimelineTools** → **SplitButton/DeleteButton** → **Keyboard Shortcuts**
+7. **Timeline State** → **timelineState.ts** → **Validation** → **Operations History**
 
 ## Key Technical Decisions
 
-### State Management ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
+### State Management ✅ IMPLEMENTED + MULTI-CLIP + RECORDER + ADVANCED TIMELINE EDITING
 - **appState**: Global UI (theme, route, sidebar) ✅
 - **mediaStore**: Imported media files with metadata ✅
 - **editState**: Multi-clip timeline state (TimelineClip[], globalTrimStart/End, selectedClipId) ✅
 - **recordingState**: Recording state (status, settings, blob, error) ✅
+- **timelineState**: Separate timeline state management with validation and operations ✅
 - **Persistence**: Files cached in memory via Map, timeline state in memory
 
 ### FFmpeg Integration ✅ IMPLEMENTED + MULTI-CLIP + RECORDER

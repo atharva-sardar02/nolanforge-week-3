@@ -14,7 +14,7 @@ const Recorder: React.FC = () => {
   const [currentStream, setCurrentStream] = useState<MediaStream | null>(null)
   
   const { addFile } = useMediaStore()
-  const { settings, recordedBlob, resetRecording } = useRecordingState()
+  const { settings, recordedBlob, resetRecording, duration } = useRecordingState()
   
   // Handle recording start
   const handleRecordingStart = () => {
@@ -28,7 +28,7 @@ const Recorder: React.FC = () => {
     try {
       // Create metadata for the recording
       const metadata = {
-        duration: settings.resolution.width && settings.resolution.height ? 0 : 0, // Will be updated by video metadata
+        duration: duration, // Use the actual recording duration
         resolution: settings.resolution,
         frameRate: settings.frameRate,
         quality: settings.quality,
@@ -120,7 +120,7 @@ const Recorder: React.FC = () => {
       
       // Create MediaFile with blob URL for playback and file path for export
       const metadata = {
-        duration: settings.resolution.width && settings.resolution.height ? 0 : 0,
+        duration: duration, // Use the actual recording duration
         resolution: settings.resolution,
         frameRate: settings.frameRate,
         quality: settings.quality,

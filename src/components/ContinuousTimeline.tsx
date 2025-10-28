@@ -9,6 +9,7 @@ interface TimelineProps {
   totalDuration: number
   globalTrimStart: number
   globalTrimEnd: number | null
+  pixelsPerSecond?: number
   onClipSelect: (clipId: string | null) => void
   onClipMove: (clipId: string, newStartTime: number) => void
   onClipRemove: (clipId: string) => void
@@ -25,6 +26,7 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
   totalDuration,
   globalTrimStart,
   globalTrimEnd,
+  pixelsPerSecond = 100,
   onClipSelect,
   onClipMove,
   onClipRemove,
@@ -42,11 +44,11 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
   const [dragStartX, setDragStartX] = useState(0)
   const [dragStartTime, setDragStartTime] = useState(0)
 
-  const pixelsPerSecond = 100 // Fixed zoom level
-  const timelineWidth = Math.max((totalDuration + 10) * pixelsPerSecond, 1000)
+  const pixelsPerSecondValue = pixelsPerSecond // Use the prop instead of fixed value
+  const timelineWidth = Math.max((totalDuration + 10) * pixelsPerSecondValue, 1000)
 
-  const timeToPixels = (time: number) => time * pixelsPerSecond
-  const pixelsToTime = (pixels: number) => pixels / pixelsPerSecond
+  const timeToPixels = (time: number) => time * pixelsPerSecondValue
+  const pixelsToTime = (pixels: number) => pixels / pixelsPerSecondValue
 
   // Auto-scroll to keep playhead visible
   useEffect(() => {
@@ -290,6 +292,16 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
                     onClick={(e) => {
                       e.stopPropagation()
                       onClipSelect(clip.id)
+                      
+                      // Also seek to the clicked position within the clip
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const x = e.clientX - rect.left
+                      const relativeTime = pixelsToTime(x)
+                      const globalTime = clip.startTime + relativeTime
+                      const clampedTime = Math.max(clip.startTime, Math.min(globalTime, clip.startTime + clip.duration))
+                      
+                      console.log('Clip clicked, seeking to:', clampedTime)
+                      onSeek(clampedTime)
                     }}
                   >
                     {/* Trim indicators - show as semi-transparent overlays */}
@@ -348,20 +360,20 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
                 )
               })}
 
-            {/* Global Trim Start Handle (Blue) */}
+            {/* Global Trim Start Handle (Green) */}
             <div
-              className="absolute top-0 bottom-0 w-1 bg-blue-500 z-40 cursor-ew-resize shadow-lg"
+              className="absolute top-0 bottom-0 w-1 bg-green-500 z-40 cursor-ew-resize shadow-lg"
               style={{ 
                 left: `${timeToPixels(globalTrimStart)}px`,
-                boxShadow: '0 0 10px rgba(59, 130, 246, 0.8)'
+                boxShadow: '0 0 10px rgba(34, 197, 94, 0.8)'
               }}
               onMouseDown={handleTrimStartMouseDown}
             >
               <div 
-                className="absolute -top-3 -left-3 w-6 h-6 bg-blue-500 rounded-full shadow-lg cursor-ew-resize border-2 border-white"
+                className="absolute -top-3 -left-3 w-6 h-6 bg-green-500 rounded-full shadow-lg cursor-ew-resize border-2 border-white"
                 onMouseDown={handleTrimStartMouseDown}
               ></div>
-              <div className="absolute -top-8 left-2 text-xs text-white font-mono font-bold whitespace-nowrap bg-blue-500 px-2 py-1 rounded shadow-lg pointer-events-none">
+              <div className="absolute -top-8 left-2 text-xs text-white font-mono font-bold whitespace-nowrap bg-green-500 px-2 py-1 rounded shadow-lg pointer-events-none">
                 Start: {formatDuration(globalTrimStart)}
               </div>
             </div>
@@ -408,8 +420,8 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
         <div className="mt-4 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30">
           <div className="flex items-center justify-center gap-6 text-xs text-gray-400 font-medium">
             <span className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-              <span>Blue = Export start</span>
+              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+              <span>Green = Export start</span>
             </span>
             <span className="flex items-center gap-2">
               <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
