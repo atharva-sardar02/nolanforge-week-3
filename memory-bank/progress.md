@@ -34,6 +34,10 @@
 - ✅ **Timeline State**: Separate state management with validation and operations
 - ✅ **Click-to-Seek**: Timeline interaction with playhead movement
 - ✅ **Recording Duration**: Full recording duration preserved in timeline
+- ✅ **Timeline Playback**: Automatic clip transitions with seamless playback
+- ✅ **Gap Handling**: Continuous playhead movement through gaps between clips
+- ✅ **Overlap Handling**: Seamless transitions for overlapping clips
+- ✅ **Boundary Resolution**: Smart clip selection at exact boundaries
 
 ## Current Status
 **Phase**: 🎉 MVP COMPLETE + MULTI-CLIP TIMELINE + PACKAGING + RECORDER MODULE + ADVANCED TIMELINE EDITING!
@@ -283,6 +287,10 @@ ffmpeg -ss <start> -i <input> -t <duration> -c copy -y <output>
 - ✅ **Timeline State**: Separate state management with validation and operations
 - ✅ **Click-to-Seek**: Timeline interaction with playhead movement
 - ✅ **Recording Duration**: Full recording duration preserved in timeline
+- ✅ **Timeline Playback**: Automatic clip transitions with seamless playback
+- ✅ **Gap Handling**: Continuous playhead movement through gaps between clips
+- ✅ **Overlap Handling**: Seamless transitions for overlapping clips
+- ✅ **Boundary Resolution**: Smart clip selection at exact boundaries
 
 ## Recent Fixes & Achievements
 - ✅ Fixed video duration showing 0:00 (blob URLs + metadata loading)
@@ -318,6 +326,10 @@ ffmpeg -ss <start> -i <input> -t <duration> -c copy -y <output>
 - ✅ **MAJOR**: Fixed recording duration issue - full recordings now sent to timeline
 - ✅ **MAJOR**: Changed left trim handle color to green for better UX
 - ✅ **MAJOR**: Fixed Media Library blank screen issue after recording and adding to timeline
+- ✅ **MAJOR**: Fixed automatic playback of second clip after first clip ends
+- ✅ **MAJOR**: Fixed playhead behavior during gaps between clips (continuous movement)
+- ✅ **MAJOR**: Fixed transition behavior for overlapping clips (seamless transitions)
+- ✅ **MAJOR**: Fixed clip selection ambiguity at exact boundaries (prioritizes selected clip)
 
 ## Project Statistics
 - **Lines of Code**: ~9000+ (Frontend + Backend)
@@ -331,4 +343,4 @@ ffmpeg -ss <start> -i <input> -t <duration> -c copy -y <output>
 - **Recording Modes**: 3 (Webcam, Screen, Combined)
 - **File Formats**: MP4 recording for optimal compatibility
 - **Timeline Editing**: Professional editing tools with keyboard shortcuts
-- **Timeline Features**: Click-to-seek, zoom, split, delete, validation
+- **Timeline Features**: Click-to-seek, zoom, split, delete, validation, seamless playback, gap handling, overlap handling, boundary resolution

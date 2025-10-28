@@ -74,13 +74,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     const handleCanPlay = () => {
       console.log('Video can play')
+      console.log('   Video state at canplay:', { 
+        paused: video.paused, 
+        readyState: video.readyState, 
+        currentTime: video.currentTime,
+        duration: video.duration 
+      })
       setIsLoading(false)
+    }
+    
+    const handlePlay = () => {
+      console.log('🎬 Video started playing')
+      console.log('   Video state at play:', { 
+        paused: video.paused, 
+        readyState: video.readyState, 
+        currentTime: video.currentTime,
+        duration: video.duration 
+      })
+    }
+    
+    const handlePause = () => {
+      console.log('⏸️ Video paused')
+      console.log('   Video state at pause:', { 
+        paused: video.paused, 
+        readyState: video.readyState, 
+        currentTime: video.currentTime,
+        duration: video.duration 
+      })
     }
     
     video.addEventListener('loadedmetadata', handleLoadedMetadata)
     video.addEventListener('error', handleError)
     video.addEventListener('loadeddata', handleLoadedData)
     video.addEventListener('canplay', handleCanPlay)
+    video.addEventListener('play', handlePlay)
+    video.addEventListener('pause', handlePause)
     
     // Only load if src changed
     if (video.src !== file.path) {
@@ -98,6 +126,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener('error', handleError)
       video.removeEventListener('loadeddata', handleLoadedData)
       video.removeEventListener('canplay', handleCanPlay)
+      video.removeEventListener('play', handlePlay)
+      video.removeEventListener('pause', handlePause)
     }
   }, [file?.id]) // Only re-run when file ID changes
 
@@ -137,18 +167,56 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const video = videoRef.current
     if (!video || externalIsPlaying === undefined) return
 
-    // Add a small delay to ensure video is ready after file change
+    // Add a longer delay to ensure video is ready after file change
     const timer = setTimeout(() => {
+      console.log('🎬 VideoPlayer externalIsPlaying check:', { externalIsPlaying, paused: video.paused, readyState: video.readyState })
+      
       if (externalIsPlaying && video.paused) {
         console.log('▶️ VideoPlayer: Starting playback (external control)')
-        video.play().catch(err => console.error('Play failed:', err))
-        setIsPlaying(true)
+        console.log('   Video readyState:', video.readyState, 'canPlay:', video.readyState >= 3)
+        
+        // Only try to play if video is ready
+        if (video.readyState >= 3) { // HAVE_FUTURE_DATA or higher
+          console.log('   Video is ready, attempting to play...')
+          console.log('   Video state before play:', { 
+            paused: video.paused, 
+            readyState: video.readyState, 
+            currentTime: video.currentTime 
+          })
+          video.play().then(() => {
+            console.log('   ✅ Video play() succeeded')
+            console.log('   Video state after play:', { 
+              paused: video.paused, 
+              readyState: video.readyState, 
+              currentTime: video.currentTime 
+            })
+            setIsPlaying(true)
+          }).catch(err => {
+            console.error('   ❌ Video play() failed:', err)
+          })
+        } else {
+          console.log('   Video not ready yet, waiting for canplay event')
+          // Wait for canplay event
+          const handleCanPlay = () => {
+            console.log('   Video can now play, starting playback')
+            video.play().then(() => {
+              console.log('   ✅ Video play() succeeded after canplay')
+              setIsPlaying(true)
+            }).catch(err => {
+              console.error('   ❌ Video play() failed after canplay:', err)
+            })
+            video.removeEventListener('canplay', handleCanPlay)
+          }
+          video.addEventListener('canplay', handleCanPlay)
+        }
       } else if (!externalIsPlaying && !video.paused) {
         console.log('⏸️ VideoPlayer: Pausing playback (external control)')
         video.pause()
         setIsPlaying(false)
+      } else {
+        console.log('   No action needed - externalIsPlaying:', externalIsPlaying, 'paused:', video.paused)
       }
-    }, 100)
+    }, 200) // Increased delay from 100ms to 200ms
 
     return () => clearTimeout(timer)
   }, [externalIsPlaying, file])

@@ -100,10 +100,11 @@ export const useEditState = create<EditState>((set, get) => ({
     const state = get()
     const duration = mediaFile.duration || 10
     
-    // Snap to grid if enabled
+    // Snap to grid if enabled - use more precise rounding
     let snappedStartTime = startTime
     if (state.snapToGrid) {
-      snappedStartTime = Math.round(startTime / state.gridSize) * state.gridSize
+      // Round to nearest grid interval with higher precision
+      snappedStartTime = Math.round((startTime / state.gridSize) * 1000) / 1000 * state.gridSize
     }
     
     const newClip: TimelineClip = {
@@ -134,10 +135,11 @@ export const useEditState = create<EditState>((set, get) => ({
   moveClip: (clipId: string, newTrackId: number, newStartTime: number) => {
     const state = get()
     
-    // Snap to grid if enabled
+    // Snap to grid if enabled - use more precise rounding
     let snappedStartTime = newStartTime
     if (state.snapToGrid) {
-      snappedStartTime = Math.round(newStartTime / state.gridSize) * state.gridSize
+      // Round to nearest grid interval with higher precision
+      snappedStartTime = Math.round((newStartTime / state.gridSize) * 1000) / 1000 * state.gridSize
     }
     
     const updatedClips = state.timelineClips.map(clip =>

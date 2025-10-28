@@ -49,6 +49,10 @@
   - **NEW FEATURES**: Green left trim handle (changed from blue)
   - **FIXED**: Recording duration issue - full recordings now sent to timeline
   - **FIXED**: Media Library blank screen issue after recording and adding to timeline
+  - **FIXED**: Automatic playback of second clip after first clip ends
+  - **FIXED**: Playhead behavior during gaps between clips (continuous movement)
+  - **FIXED**: Transition behavior for overlapping clips (seamless transitions)
+  - **FIXED**: Clip selection ambiguity at exact boundaries (prioritizes selected clip)
   - **VERIFIED**: All timeline editing features working perfectly
 
 ## Active Decisions
@@ -87,6 +91,10 @@
 - **Click-to-Seek**: ✅ Timeline interaction with playhead movement
 - **Recording Duration**: ✅ Full recording duration preserved in timeline
 - **Media Library Fix**: ✅ Fixed blank screen issue after recording and adding to timeline
+- **Timeline Playback**: ✅ Automatic clip transitions with seamless playback
+- **Gap Handling**: ✅ Continuous playhead movement through gaps between clips
+- **Overlap Handling**: ✅ Seamless transitions for overlapping clips
+- **Boundary Resolution**: ✅ Smart clip selection at exact boundaries
 
 ### Export Implementation Details (Working)
 - **Export Method**: FFmpeg stream copy (-c copy) for fast trimming + concatenation ✅
@@ -141,4 +149,8 @@
 - ✅ **Click-to-Seek**: Timeline interaction with playhead movement
 - ✅ **Recording Duration**: Full recording duration preserved in timeline
 - ✅ **Media Library Fix**: Fixed blank screen issue after recording and adding to timeline
+- ✅ **Timeline Playback**: Automatic clip transitions with seamless playback
+- ✅ **Gap Handling**: Continuous playhead movement through gaps between clips
+- ✅ **Overlap Handling**: Seamless transitions for overlapping clips
+- ✅ **Boundary Resolution**: Smart clip selection at exact boundaries
 - 🎯 **Ready for**: Advanced features, polish, or comprehensive submission preparation

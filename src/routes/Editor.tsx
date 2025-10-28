@@ -33,6 +33,7 @@ const Editor: React.FC = () => {
 
   const [currentDisplayClip, setCurrentDisplayClip] = useState<any>(null)
   const [localTime, setLocalTime] = useState(0)
+  const [forcePlay, setForcePlay] = useState(false) // Force play trigger
 
   // Timeline tool handlers
   const handleSplitClip = useCallback(() => {
@@ -99,33 +100,79 @@ const Editor: React.FC = () => {
       .sort((a, b) => a.startTime - b.startTime)
     
     // Find the clip that contains currentTime
+    // If there's ambiguity (e.g., at exact boundaries), prioritize the currently selected clip
     let clipToDisplay = mainTrackClips.find(clip => 
-      currentTime >= clip.startTime && currentTime < (clip.startTime + clip.duration)
+      currentTime >= clip.startTime && currentTime <= (clip.startTime + clip.duration)
     )
     
-    // If no clip found at exact time, find the closest one before currentTime
-    if (!clipToDisplay && mainTrackClips.length > 0) {
-      // Find last clip that starts before or at currentTime
-      const clipsBeforeOrAt = mainTrackClips.filter(clip => clip.startTime <= currentTime)
-      if (clipsBeforeOrAt.length > 0) {
-        clipToDisplay = clipsBeforeOrAt[clipsBeforeOrAt.length - 1]
-      } else {
-        // If currentTime is before all clips, use first clip
-        clipToDisplay = mainTrackClips[0]
+    // If we found a clip but it's not the selected one, and we're at a boundary,
+    // prioritize the selected clip if it also contains this time
+    if (clipToDisplay && clipToDisplay.id !== selectedClipId && selectedClipId) {
+      const selectedClip = mainTrackClips.find(c => c.id === selectedClipId)
+      if (selectedClip && currentTime >= selectedClip.startTime && currentTime <= (selectedClip.startTime + selectedClip.duration)) {
+        console.log('   Boundary ambiguity - prioritizing selected clip:', selectedClip.id)
+        clipToDisplay = selectedClip
       }
+    }
+    
+    console.log('🔍 Finding clip for currentTime:', currentTime)
+    console.log('   Available clips:', mainTrackClips.map(c => ({ id: c.id, startTime: c.startTime, duration: c.duration, endTime: c.startTime + c.duration })))
+    console.log('   Found clip:', clipToDisplay ? { id: clipToDisplay.id, startTime: clipToDisplay.startTime, duration: clipToDisplay.duration } : 'none')
+    
+    // If no clip found at exact time, check if we're in a gap
+    if (!clipToDisplay && mainTrackClips.length > 0) {
+      // Check if currentTime is before the first clip
+      if (currentTime < mainTrackClips[0].startTime) {
+        // Before first clip - show blank screen
+        setCurrentDisplayClip(null)
+        setLocalTime(0)
+        return
+      }
+      
+      // Check if currentTime is after the last clip
+      const lastClip = mainTrackClips[mainTrackClips.length - 1]
+      if (currentTime >= lastClip.startTime + lastClip.duration) {
+        // After last clip - show blank screen and pause if playing
+        setCurrentDisplayClip(null)
+        setLocalTime(0)
+        // Note: We can't check isPlaying here due to dependency issues
+        // The pause logic is handled in the onEnded handler instead
+        return
+      }
+      
+      // We're in a gap between clips - show blank screen
+      setCurrentDisplayClip(null)
+      setLocalTime(0)
+      return
     }
     
     if (clipToDisplay) {
       const mediaFile = getFileById(clipToDisplay.mediaFileId)
-      if (mediaFile && mediaFile.id !== currentDisplayClip?.id) {
-        console.log('🎥 Loading clip at time', currentTime, ':', mediaFile.name)
-        setCurrentDisplayClip(mediaFile)
-      }
+      const isNewClip = mediaFile && mediaFile.id !== currentDisplayClip?.id
       
-      // Calculate the local time within this clip's source video
-      const timeIntoClip = currentTime - clipToDisplay.startTime
-      const sourceTime = clipToDisplay.trimStart + timeIntoClip
-      setLocalTime(Math.max(clipToDisplay.trimStart, Math.min(sourceTime, clipToDisplay.trimEnd)))
+      if (mediaFile && isNewClip) {
+        console.log('🎥 Loading NEW clip at time', currentTime, ':', mediaFile.name)
+        console.log('   Clip details:', { 
+          id: clipToDisplay.id, 
+          startTime: clipToDisplay.startTime, 
+          duration: clipToDisplay.duration,
+          trimStart: clipToDisplay.trimStart,
+          trimEnd: clipToDisplay.trimEnd
+        })
+        setCurrentDisplayClip(mediaFile)
+        
+        // For new clips, always start from trimStart
+        console.log('   Setting localTime to:', clipToDisplay.trimStart, '(NEW CLIP - starting from beginning)')
+        setLocalTime(clipToDisplay.trimStart)
+      } else if (mediaFile) {
+        // For existing clips, calculate the proper time
+        const timeIntoClip = currentTime - clipToDisplay.startTime
+        const sourceTime = clipToDisplay.trimStart + timeIntoClip
+        const finalLocalTime = Math.max(clipToDisplay.trimStart, Math.min(sourceTime, clipToDisplay.trimEnd))
+        
+        console.log('   Setting localTime to:', finalLocalTime, '(EXISTING CLIP - timeIntoClip:', timeIntoClip, ', sourceTime:', sourceTime, ')')
+        setLocalTime(finalLocalTime)
+      }
       
       // Auto-select this clip if not already selected
       if (clipToDisplay.id !== selectedClipId) {
@@ -133,7 +180,19 @@ const Editor: React.FC = () => {
         selectClip(clipToDisplay.id)
       }
     }
-  }, [currentTime, timelineClips, getFileById, selectedClipId, selectClip, currentDisplayClip?.id])
+  }, [currentTime, timelineClips, getFileById, selectClip])
+
+  // Reset force play trigger after it's been used
+  useEffect(() => {
+    if (forcePlay) {
+      console.log('🔄 Force play triggered, resetting...')
+      const timer = setTimeout(() => {
+        setForcePlay(false)
+        console.log('🔄 Force play reset')
+      }, 500) // Reset after 500ms
+      return () => clearTimeout(timer)
+    }
+  }, [forcePlay])
 
   const handleTimeUpdate = (time: number) => {
     // Update local time to show position within current clip
@@ -147,9 +206,15 @@ const Editor: React.FC = () => {
     const currentClip = mainTrackClips.find(c => c.id === selectedClipId)
     if (!currentClip) return
     
-    // ALWAYS update global timeline position based on video time (whether playing or paused)
+    // Calculate global timeline position
     const newGlobalTime = currentClip.startTime + (time - currentClip.trimStart)
-    setCurrentTime(newGlobalTime)
+    
+    // Only update currentTime if we're not near the end of the clip
+    // This allows the video to reach its natural end and trigger the 'ended' event
+    const timeUntilEnd = currentClip.duration - (time - currentClip.trimStart)
+    if (timeUntilEnd > 0.1) { // Only update if more than 0.1 seconds from end
+      setCurrentTime(newGlobalTime)
+    }
     
     // Note: Clip transitions are now handled by the onEnded event
     // This prevents race conditions between timeupdate and ended events
@@ -339,10 +404,11 @@ const Editor: React.FC = () => {
             {currentDisplayClip ? (
               <div className="w-full" style={{ height: '500px' }}>
                   <VideoPlayer
+                  key={currentDisplayClip?.id || 'no-clip'}
                   file={currentDisplayClip}
                   className="w-full h-full"
                     onTimeUpdate={handleTimeUpdate}
-                    externalIsPlaying={isPlaying}
+                    externalIsPlaying={isPlaying || forcePlay}
                     seekToTime={localTime}
                     onEnded={() => {
                       // Get fresh state directly from Zustand to avoid stale closure
@@ -367,18 +433,66 @@ const Editor: React.FC = () => {
                         console.log(`🎬 Moving to next clip: ${nextClip.id}`)
                         console.log(`   Next clip start: ${nextClip.startTime}, trimStart: ${nextClip.trimStart}`)
                         
-                        // ALWAYS continue playing when transitioning (ignore wasPlaying state)
-                        // The video ended naturally, so we should continue
-                        console.log('   Setting playing state to TRUE for continuation')
-                        setPlaying(true)
+                        // Check if there's a gap between current and next clip
+                        const currentClip = mainTrackClips[currentClipIndex]
+                        const currentClipEnd = currentClip.startTime + currentClip.duration
+                        const gapDuration = nextClip.startTime - currentClipEnd
                         
-                        // Move to the next clip's start time
-                        setCurrentTime(nextClip.startTime)
-                        // Select the next clip (this will trigger video load)
-                        selectClip(nextClip.id)
+                        if (gapDuration > 0.1) {
+                          // There's a significant gap - continue playing through the gap
+                          console.log(`🎬 Gap detected: ${gapDuration}s between clips`)
+                          console.log(`   Advancing to gap start: ${currentClipEnd}`)
+                          setCurrentTime(currentClipEnd)
+                          // Keep playing through the gap
+                          setPlaying(true)
+                          console.log('   Continuing playback through gap')
+                          
+                          // Set up a timer to advance through the gap
+                          const gapTimer = setInterval(() => {
+                            const currentState = useEditState.getState()
+                            const newTime = currentState.currentTime + 0.1 // Advance by 0.1 seconds
+                            if (newTime >= nextClip.startTime) {
+                              // Reached the next clip
+                              clearInterval(gapTimer)
+                              console.log('   Gap completed, transitioning to next clip')
+                              setCurrentTime(nextClip.startTime)
+                              selectClip(nextClip.id)
+                              setForcePlay(true)
+                            } else {
+                              setCurrentTime(newTime)
+                            }
+                          }, 100) // Update every 100ms
+                        } else {
+                          // No significant gap - check if clips overlap
+                          if (gapDuration < 0) {
+                            // Clips overlap - transition to the end of current clip
+                            console.log('   Clips overlap - transitioning to end of current clip')
+                            console.log('   Setting playing state to TRUE')
+                            setPlaying(true)
+                            console.log('   Setting currentTime to:', currentClipEnd)
+                            setCurrentTime(currentClipEnd)
+                            console.log('   Selecting clip:', nextClip.id)
+                            selectClip(nextClip.id)
+                            console.log('   Triggering force play')
+                            setForcePlay(true) // Trigger force play
+                            console.log('   Transition complete - next clip should start playing')
+                          } else {
+                            // No gap and no overlap - transition directly to next clip
+                            console.log('   No gap and no overlap - transitioning directly to next clip')
+                            console.log('   Setting playing state to TRUE')
+                            setPlaying(true)
+                            console.log('   Setting currentTime to:', nextClip.startTime)
+                            setCurrentTime(nextClip.startTime)
+                            console.log('   Selecting clip:', nextClip.id)
+                            selectClip(nextClip.id)
+                            console.log('   Triggering force play')
+                            setForcePlay(true) // Trigger force play
+                            console.log('   Transition complete - next clip should start playing')
+                          }
+                        }
                       } else {
-                        // No more clips - stop playback
-                        console.log('🎬 No more clips - stopping')
+                        // No more clips - stop playback and reset to beginning
+                        console.log('🎬 No more clips - stopping and resetting to beginning')
                         setPlaying(false)
                         setCurrentTime(0)
                         if (mainTrackClips.length > 0) {
@@ -391,10 +505,14 @@ const Editor: React.FC = () => {
             ) : (
               <div className="w-full flex items-center justify-center bg-black rounded-lg" style={{ height: '500px' }}>
                 <div className="text-center text-gray-400">
-                  <div className="text-4xl mb-4">🎬</div>
-                  <p>No video loaded</p>
-                  <p className="text-sm mt-2">Clips: {timelineClips.length}</p>
-                  <p className="text-sm">Selected: {selectedClipId || 'none'}</p>
+                  <div className="text-6xl mb-4">📺</div>
+                  <div className="text-xl font-semibold mb-2">Blank Screen</div>
+                  <div className="text-sm">
+                    {timelineClips.length === 0 
+                      ? 'No clips on timeline' 
+                      : 'Gap between clips or end of timeline'
+                    }
+                  </div>
                 </div>
                 </div>
               )}
