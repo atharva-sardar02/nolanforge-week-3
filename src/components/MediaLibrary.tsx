@@ -1,21 +1,74 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMediaStore } from '../state/mediaStore'
 import { useEditState } from '../state/editState'
 import MediaListItem from './MediaListItem'
 import ConfirmationDialog from './ConfirmationDialog'
+import { createMediaFile, validateMultipleFiles, getErrorMessage } from '../utils/fileUtils'
 
 type ViewMode = 'grid' | 'list'
 
 const MediaLibrary: React.FC = () => {
   const navigate = useNavigate()
-  const { files, selectedFileId, selectFile, removeFile, isLoading, error } = useMediaStore()
+  const { files, selectedFileId, selectFile, removeFile, isLoading, error, addFile, setLoading, setError, clearError } = useMediaStore()
   const { addClipToTimeline, getTotalDuration } = useEditState()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [fileToDelete, setFileToDelete] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [previewFile, setPreviewFile] = useState<any>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [warnings, setWarnings] = useState<string[]>([])
+
+  // Handle drag and drop for file upload
+  const handleFilesAdded = useCallback(async (files: File[]) => {
+    clearError()
+    setWarnings([])
+    setLoading(true)
+    
+    try {
+      const validation = validateMultipleFiles(files)
+      
+      if (validation.warnings.length > 0) {
+        const allWarnings = validation.warnings.flatMap(w => w.warnings)
+        setWarnings(allWarnings)
+      }
+      
+      if (validation.invalidFiles.length > 0) {
+        const errorMessages = validation.invalidFiles.map(({ file, error }) => 
+          `${file.name}: ${error}`
+        )
+        setError(errorMessages.join('; '))
+      }
+      
+      // Process valid files asynchronously to extract metadata
+      for (const file of validation.validFiles) {
+        try {
+          const mediaFile = await createMediaFile(file)
+          addFile(mediaFile)
+        } catch (err) {
+          console.error(`Failed to process file ${file.name}:`, err)
+          setError(`Failed to process ${file.name}`)
+        }
+      }
+      
+      if (validation.validFiles.length > 0) {
+        const summary = `Successfully imported ${validation.validFiles.length} file(s)`
+        if (validation.invalidFiles.length > 0) {
+          console.warn(`${summary}, ${validation.invalidFiles.length} file(s) failed validation`)
+        } else {
+          console.log(summary)
+        }
+      }
+      
+    } catch (error) {
+      const errorMessage = getErrorMessage(error)
+      setError(`Failed to process files: ${errorMessage}`)
+      console.error('Error processing files:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [addFile, setLoading, setError, clearError])
 
   // Handle ESC key to close preview
   useEffect(() => {
@@ -29,6 +82,48 @@ const MediaLibrary: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [showPreview])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log('🎯 Drag over MediaLibrary')
+    setIsDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log('🎯 Drag leave MediaLibrary')
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log('🎯 Drop on MediaLibrary', e.dataTransfer.files.length, 'files')
+    setIsDragOver(false)
+    
+    const droppedFiles = Array.from(e.dataTransfer.files)
+    console.log('🎯 Dropped files:', droppedFiles.map(f => f.name))
+    if (droppedFiles.length > 0) {
+      handleFilesAdded(droppedFiles)
+    }
+  }, [handleFilesAdded])
+
+  // Additional drag event handlers for better compatibility
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log('🎯 Drag enter MediaLibrary')
+    setIsDragOver(true)
+  }, [])
+
+  const handleDragExit = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log('🎯 Drag exit MediaLibrary')
+    setIsDragOver(false)
+  }, [])
 
   const handleEdit = (file: any) => {
     // Add file to timeline at the end and navigate to editor
@@ -105,24 +200,73 @@ const MediaLibrary: React.FC = () => {
 
   if (files.length === 0) {
     return (
-      <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-20">
+      <div 
+        className={`glass rounded-3xl border backdrop-blur-xl p-20 transition-all duration-300 ${
+          isDragOver 
+            ? 'border-blue-500/60 bg-gradient-to-br from-blue-500/10 to-purple-500/10 scale-105' 
+            : 'border-gray-700/30'
+        }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onDragEnter={(e) => {
+          e.preventDefault()
+          console.log('🎯 Drag enter MediaLibrary')
+          setIsDragOver(true)
+        }}
+        onDragExit={(e) => {
+          e.preventDefault()
+          console.log('🎯 Drag exit MediaLibrary')
+          setIsDragOver(false)
+        }}
+      >
         <div className="text-center space-y-6">
-          <div className="relative mx-auto w-32 h-32 bg-gradient-to-br from-gray-700/30 to-gray-800/30 rounded-3xl flex items-center justify-center text-7xl group hover:scale-105 transition-transform duration-500">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
-            <span className="relative z-10">📁</span>
+          <div className={`relative mx-auto w-32 h-32 bg-gradient-to-br from-gray-700/30 to-gray-800/30 rounded-3xl flex items-center justify-center text-7xl group transition-all duration-500 ${
+            isDragOver ? 'scale-110' : 'hover:scale-105'
+          }`}>
+            <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 transition-opacity duration-500 blur-xl ${
+              isDragOver ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}></div>
+            <span className="relative z-10">{isDragOver ? '📥' : '📁'}</span>
           </div>
           <div className="space-y-3">
             <h3 className="text-2xl font-bold text-white">
-              No files imported yet
+              {isDragOver ? 'Drop files here!' : 'No files imported yet'}
             </h3>
             <p className="text-gray-300 text-lg">
-              Drop your video files to get started
+              {isDragOver ? 'Release to import your files' : 'Drop your video files here to get started'}
             </p>
             <div className="pt-4">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-700/30 border border-gray-600/30">
-                <span className="text-gray-400 text-sm">Try dragging files to the import zone</span>
-                <span className="text-xl">👈</span>
+                <span className="text-gray-400 text-sm">
+                  {isDragOver ? 'Release to import' : 'Drag & drop video files here'}
+                </span>
+                <span className="text-xl">{isDragOver ? '📥' : '👈'}</span>
               </div>
+            </div>
+            {/* File selection buttons */}
+            <div className="pt-4 flex gap-4 justify-center">
+              <button
+                onClick={() => {
+                  console.log('🧪 Test button clicked')
+                  // Create a test file input
+                  const input = document.createElement('input')
+                  input.type = 'file'
+                  input.multiple = true
+                  input.accept = 'video/*'
+                  input.onchange = (e) => {
+                    const files = Array.from((e.target as HTMLInputElement).files || [])
+                    console.log('🧪 Files selected:', files.map(f => f.name))
+                    if (files.length > 0) {
+                      handleFilesAdded(files)
+                    }
+                  }
+                  input.click()
+                }}
+                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105"
+              >
+                🧪 Test File Selection
+              </button>
             </div>
           </div>
         </div>
@@ -131,7 +275,69 @@ const MediaLibrary: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
+    <div 
+      className={`space-y-6 h-full flex flex-col transition-all duration-300 relative ${
+        isDragOver ? 'bg-blue-500/5 rounded-3xl p-4' : ''
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onDragEnter={handleDragEnter}
+      onDragExit={handleDragExit}
+    >
+      {/* Drag Overlay */}
+      {isDragOver && (
+        <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-sm rounded-3xl border-2 border-dashed border-blue-500/60 z-10 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="text-6xl animate-bounce">📥</div>
+            <div className="text-2xl font-bold text-white">Drop files to import</div>
+            <div className="text-blue-300">Release to add files to your media library</div>
+          </div>
+        </div>
+      )}
+
+      {/* Error and Warning Display */}
+      {(error || warnings.length > 0) && (
+        <div className="space-y-4 animate-slide-in">
+          {error && (
+            <div className="glass rounded-xl border border-red-500/30 backdrop-blur-xl p-4 bg-gradient-to-br from-red-500/10 to-red-600/5">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-xl">
+                  ⚠️
+                </div>
+                <div>
+                  <h4 className="text-red-300 font-bold text-sm mb-1">Import Error</h4>
+                  <p className="text-red-200 text-sm">{error}</p>
+                </div>
+                <button
+                  onClick={clearError}
+                  className="ml-auto p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+          {warnings.length > 0 && (
+            <div className="glass rounded-xl border border-yellow-500/30 backdrop-blur-xl p-4 bg-gradient-to-br from-yellow-500/10 to-orange-500/5">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center text-xl">
+                  ⚠️
+                </div>
+                <div>
+                  <h4 className="text-yellow-300 font-bold text-sm mb-1">Import Warnings</h4>
+                  <ul className="text-yellow-200 text-sm space-y-1">
+                    {warnings.map((warning, index) => (
+                      <li key={index}>• {warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Header with View Toggle */}
       <div className="flex items-center justify-between">
         <div>

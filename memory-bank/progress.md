@@ -158,6 +158,7 @@
 - ✅ **Click-to-Seek**: Timeline interaction with playhead movement
 - ✅ **Visual Improvements**: Green left trim handle (changed from blue)
 - ✅ **Recording Duration Fix**: Full recording duration preserved in timeline
+- ✅ **Drag and Drop**: File upload via drag and drop in Media Library
 
 ### Implementation Details
 **Frontend (React/TypeScript):**
@@ -330,6 +331,7 @@ ffmpeg -ss <start> -i <input> -t <duration> -c copy -y <output>
 - ✅ **MAJOR**: Fixed playhead behavior during gaps between clips (continuous movement)
 - ✅ **MAJOR**: Fixed transition behavior for overlapping clips (seamless transitions)
 - ✅ **MAJOR**: Fixed clip selection ambiguity at exact boundaries (prioritizes selected clip)
+- ✅ **MAJOR**: Fixed drag and drop functionality in Tauri desktop app
 
 ## Project Statistics
 - **Lines of Code**: ~9000+ (Frontend + Backend)

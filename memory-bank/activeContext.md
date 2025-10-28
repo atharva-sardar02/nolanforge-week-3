@@ -47,12 +47,14 @@
   - **NEW FEATURES**: Configurable zoom functionality in ContinuousTimeline
   - **NEW FEATURES**: Click-to-seek functionality on timeline
   - **NEW FEATURES**: Green left trim handle (changed from blue)
+  - **NEW FEATURES**: Drag and drop file upload to Media Library
   - **FIXED**: Recording duration issue - full recordings now sent to timeline
   - **FIXED**: Media Library blank screen issue after recording and adding to timeline
   - **FIXED**: Automatic playback of second clip after first clip ends
   - **FIXED**: Playhead behavior during gaps between clips (continuous movement)
   - **FIXED**: Transition behavior for overlapping clips (seamless transitions)
   - **FIXED**: Clip selection ambiguity at exact boundaries (prioritizes selected clip)
+  - **FIXED**: Drag and drop functionality in Tauri desktop app
   - **VERIFIED**: All timeline editing features working perfectly
 
 ## Active Decisions
@@ -95,6 +97,7 @@
 - **Gap Handling**: ✅ Continuous playhead movement through gaps between clips
 - **Overlap Handling**: ✅ Seamless transitions for overlapping clips
 - **Boundary Resolution**: ✅ Smart clip selection at exact boundaries
+- **Drag and Drop**: ✅ File upload via drag and drop in Media Library
 
 ### Export Implementation Details (Working)
 - **Export Method**: FFmpeg stream copy (-c copy) for fast trimming + concatenation ✅
@@ -153,4 +156,5 @@
 - ✅ **Gap Handling**: Continuous playhead movement through gaps between clips
 - ✅ **Overlap Handling**: Seamless transitions for overlapping clips
 - ✅ **Boundary Resolution**: Smart clip selection at exact boundaries
+- ✅ **Drag and Drop**: File upload via drag and drop in Media Library
 - 🎯 **Ready for**: Advanced features, polish, or comprehensive submission preparation
