@@ -121,10 +121,8 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
         canvas.height
       )
 
-      // Always compose if we have compositions to render
-      if (compositions.length > 0) {
-        composerRef.current.compose(compositions, currentTime, isPlaying)
-      }
+      // Always compose - even during gaps (empty compositions array)
+      composerRef.current.compose(compositions, currentTime, isPlaying)
     }, 16) // Throttle to ~60fps (16ms)
 
     return () => clearTimeout(timeoutId)

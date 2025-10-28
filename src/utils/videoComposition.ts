@@ -1,3 +1,7 @@
+/**
+ * Video composition utilities for multi-track editing
+ * UPDATED: Fixed gap detection logic - force refresh
+ */
 import { MediaFile } from '../state/mediaStore'
 import { TimelineClip } from '../state/editState'
 
@@ -91,29 +95,31 @@ export class VideoComposer {
 
   /**
    * Compose multiple video tracks into a single canvas
-   * FORCE REFRESH - Updated debugging
+   * FORCE REFRESH - Updated gap detection logic
    */
   compose(
     tracks: TrackComposition[],
     globalTime: number,
     isPlaying: boolean
   ): void {
-    console.log('🎬 VideoComposer.compose called:', { tracksCount: tracks.length, globalTime, isPlaying })
+    console.log('🚀 NEW GAP DETECTION LOGIC - VideoComposer.compose called:', { tracksCount: tracks.length, globalTime, isPlaying, timestamp: Date.now() })
+    console.log('🔥 FORCE RELOAD - Time diff check removed!')
     
-    // Only update if time has changed significantly (reduce flickering)
-    const timeDiff = Math.abs(globalTime - this.lastCompositionTime)
-    if (timeDiff < 0.01) {
-      console.log('⏭️ Skipping composition - time diff too small:', timeDiff)
-      return // Reduced threshold to prevent black screen
-    }
-    
+    // Update last composition time for reference
     this.lastCompositionTime = globalTime
-    console.log('✅ Proceeding with composition')
+    console.log('✅ Proceeding with composition - NO TIME DIFF CHECK')
 
     // Only clear canvas if we have tracks to render
     if (tracks.length === 0) {
-      console.log('🖤 No tracks - clearing canvas')
+      console.log('🖤 No tracks - showing blank screen with message')
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+      if (this.options.backgroundColor) {
+        this.ctx.fillStyle = this.options.backgroundColor
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+      }
+      
+      // Draw blank screen message
+      this.drawBlankScreenMessage()
       return
     }
 
@@ -122,9 +128,67 @@ export class VideoComposer {
       .filter(track => track.visible)
       .sort((a, b) => a.trackId - b.trackId)
 
+    // For each track, find the specific clip that should be playing at the current time
+    // This matches the single-track logic approach
+    const activeTracks = sortedTracks.filter(track => {
+      const clipStart = track.clip.startTime
+      const clipEnd = track.clip.startTime + track.clip.duration
+      const isActive = globalTime >= clipStart && globalTime <= clipEnd
+      
+      console.log(`🔍 Track ${track.trackId} clip check:`, {
+        globalTime,
+        clipStart,
+        clipEnd,
+        isActive,
+        clipId: track.clip.id
+      })
+      
+      return isActive
+    })
+    
+    console.log('🎯 Active tracks (not in gap):', activeTracks.length, 'out of', sortedTracks.length)
+    console.log('🔍 Gap detection details:', {
+      globalTime,
+      tracks: sortedTracks.map(track => ({
+        trackId: track.trackId,
+        clipStartTime: track.clip.startTime,
+        clipDuration: track.clip.duration,
+        clipEndTime: track.clip.startTime + track.clip.duration,
+        isActive: globalTime >= track.clip.startTime && globalTime <= (track.clip.startTime + track.clip.duration)
+      }))
+    })
+    
+    // Log each track individually for better visibility
+    sortedTracks.forEach(track => {
+      const isActive = globalTime >= track.clip.startTime && globalTime <= (track.clip.startTime + track.clip.duration)
+      console.log(`📊 Track ${track.trackId}:`, {
+        clipStartTime: track.clip.startTime,
+        clipDuration: track.clip.duration,
+        clipEndTime: track.clip.startTime + track.clip.duration,
+        globalTime: globalTime,
+        isActive: isActive,
+        isBeforeStart: globalTime < track.clip.startTime,
+        isAfterEnd: globalTime > (track.clip.startTime + track.clip.duration)
+      })
+    })
+    
+    // If no tracks are active, we're in a gap - show blank screen with message
+    if (activeTracks.length === 0) {
+      console.log('🖤 In gap - showing blank screen with message')
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+      if (this.options.backgroundColor) {
+        this.ctx.fillStyle = this.options.backgroundColor
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+      }
+      
+      // Draw blank screen message
+      this.drawBlankScreenMessage()
+      return
+    }
+
     // Check if any video is ready before clearing canvas
     let hasReadyVideo = false
-    for (const track of sortedTracks) {
+    for (const track of activeTracks) {
       const video = this.getVideoElement(track.clip, track.mediaFile)
       console.log(`📹 Video ${track.clip.id} readyState:`, video.readyState)
       if (video.readyState >= 2) { // Reduced back to HAVE_CURRENT_DATA
@@ -152,9 +216,9 @@ export class VideoComposer {
         console.log('🖤 Background filled with:', this.options.backgroundColor)
       }
 
-      // Render each track
-      console.log('🎬 Rendering', sortedTracks.length, 'tracks')
-      for (const track of sortedTracks) {
+      // Render only active tracks (not in gaps)
+      console.log('🎬 Rendering', activeTracks.length, 'active tracks')
+      for (const track of activeTracks) {
         const video = this.getVideoElement(track.clip, track.mediaFile)
         
         console.log(`📹 Processing track ${track.trackId}:`, {
@@ -167,7 +231,8 @@ export class VideoComposer {
           videoSrc: video.src,
           globalTime: globalTime,
           clipStartTime: track.clip.startTime,
-          clipDuration: track.clip.duration
+          clipDuration: track.clip.duration,
+          clipEndTime: track.clip.startTime + track.clip.duration
         })
         
         // Update video time
@@ -248,6 +313,34 @@ export class VideoComposer {
       video.remove() // Remove from DOM
     })
     this.videoElements.clear()
+  }
+
+  /**
+   * Draw blank screen message
+   */
+  private drawBlankScreenMessage(): void {
+    console.log('🎨 Drawing blank screen message on canvas:', { width: this.canvas.width, height: this.canvas.height })
+    
+    const centerX = this.canvas.width / 2
+    const centerY = this.canvas.height / 2
+    
+    console.log('📍 Message position:', { centerX, centerY })
+    
+    // Set text properties
+    this.ctx.fillStyle = '#FFFFFF' // white for better visibility
+    this.ctx.textAlign = 'center'
+    this.ctx.textBaseline = 'middle'
+    
+    // Draw "Blank Screen" text (larger and simpler)
+    this.ctx.font = 'bold 32px Arial'
+    this.ctx.fillText('Blank Screen', centerX, centerY - 20)
+    
+    // Draw subtitle
+    this.ctx.font = '16px Arial'
+    this.ctx.fillStyle = '#CCCCCC' // lighter gray
+    this.ctx.fillText('Gap between clips', centerX, centerY + 20)
+    
+    console.log('✅ Blank screen message drawn')
   }
 
   /**

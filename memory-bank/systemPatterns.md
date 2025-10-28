@@ -10,7 +10,7 @@ Tauri Shell (Rust Backend)
 └── Recorder Module (React) - ✅ COMPLETE
 ```
 
-### Current Architecture ✅ MVP COMPLETE + MULTI-CLIP TIMELINE + RECORDER MODULE + ADVANCED TIMELINE EDITING + AUDIO MIXING + TIMELINE ZOOM + THUMBNAIL PREVIEWS
+### Current Architecture ✅ MVP COMPLETE + MULTI-CLIP TIMELINE + RECORDER MODULE + ADVANCED TIMELINE EDITING + AUDIO MIXING + TIMELINE ZOOM + THUMBNAIL PREVIEWS + MULTI-TRACK EDITING
 ```
 React Frontend (TypeScript + Vite)
 ├── App.tsx - Main app with routing
@@ -36,13 +36,18 @@ React Frontend (TypeScript + Vite)
 │   ├── DeleteButton.tsx - UI button for removing timeline segments ✅
 │   ├── TimelineTools.tsx - Toolbar with editing tools and shortcuts ✅
 │   ├── TrackLane.tsx - Individual track rendering component ✅
-│   └── Playhead.tsx - Timeline navigation with time display ✅
+│   ├── Playhead.tsx - Timeline navigation with time display ✅
+│   ├── TrackHeader.tsx - Track controls component ✅
+│   ├── TrackRow.tsx - Individual track rendering with drag-and-drop ✅
+│   ├── MultiTrackVideoPlayer.tsx - Multi-track video preview ✅
+│   └── OverlayControls.tsx - Overlay property controls ✅
 ├── State/
 │   ├── appState.ts - Global UI state ✅
 │   ├── mediaStore.ts - Media files ✅
 │   ├── editState.ts - Multi-clip timeline state ✅
 │   ├── recordingState.ts - Recording state management ✅
-│   └── timelineState.ts - Separate timeline state management ✅
+│   ├── timelineState.ts - Separate timeline state management ✅
+│   └── trackState.ts - Multi-track state management ✅
 ├── Hooks/
 │   ├── useExport.ts - Multi-clip export logic ✅
 │   └── useMediaRecorder.ts - MediaRecorder API integration ✅
@@ -51,10 +56,11 @@ React Frontend (TypeScript + Vite)
     ├── time.ts - Time formatting ✅
     ├── recordingUtils.ts - Recording file handling and blob management ✅
     ├── timelineOps.ts - Comprehensive timeline operations utilities ✅
-    └── thumbnailUtils.ts - Advanced thumbnail generation with caching ✅
+    ├── thumbnailUtils.ts - Advanced thumbnail generation with caching ✅
+    └── videoComposition.ts - VideoComposer class for canvas composition ✅
 ```
 
-### Data Flow ✅ IMPLEMENTED + MULTI-CLIP + RECORDER + ADVANCED TIMELINE EDITING + AUDIO MIXING + TIMELINE ZOOM + THUMBNAIL PREVIEWS
+### Data Flow ✅ IMPLEMENTED + MULTI-CLIP + RECORDER + ADVANCED TIMELINE EDITING + AUDIO MIXING + TIMELINE ZOOM + THUMBNAIL PREVIEWS + MULTI-TRACK EDITING
 1. **Uploader** → Imports files → **MediaStore** (blob URLs + metadata + thumbnails)
 2. **MediaLibrary** → "Edit" button → **addClipToTimeline** → **editState.timelineClips**
 3. **Editor** → **ContinuousTimeline** (all clips with thumbnails) + **Timeline** (selected clip) → **ExportPanel**
@@ -65,15 +71,19 @@ React Frontend (TypeScript + Vite)
 8. **Timeline Zoom** → **Zoom Controls** → **setZoomLevel** → **ContinuousTimeline pixelsPerSecond**
 9. **Audio Mixing** → **Web Audio API** → **Gain Nodes** → **Mixed Audio Stream** → **Recording**
 10. **Thumbnail Generation** → **Canvas API** → **Video Frame Extraction** → **Cache Storage** → **Display**
+11. **Multi-Track Editing** → **TrackState** → **TrackHeader/TrackRow** → **VideoComposer** → **MultiTrackVideoPlayer**
+12. **Overlay Controls** → **Overlay Properties** → **Position/Size/Opacity/Blend** → **Canvas Composition**
+13. **Gap Detection** → **Active Tracks Filter** → **Blank Screen Message** → **Canvas Display**
 
 ## Key Technical Decisions
 
-### State Management ✅ IMPLEMENTED + MULTI-CLIP + RECORDER + ADVANCED TIMELINE EDITING + AUDIO MIXING + TIMELINE ZOOM + THUMBNAIL PREVIEWS
+### State Management ✅ IMPLEMENTED + MULTI-CLIP + RECORDER + ADVANCED TIMELINE EDITING + AUDIO MIXING + TIMELINE ZOOM + THUMBNAIL PREVIEWS + MULTI-TRACK EDITING
 - **appState**: Global UI (theme, route, sidebar) ✅
 - **mediaStore**: Imported media files with metadata and thumbnails ✅
 - **editState**: Multi-clip timeline state (TimelineClip[], globalTrimStart/End, selectedClipId, zoomLevel) ✅
 - **recordingState**: Recording state (status, settings, blob, error) ✅
 - **timelineState**: Separate timeline state management with validation and operations ✅
+- **trackState**: Multi-track state management (Track[], track controls, track properties) ✅
 - **Persistence**: Files cached in memory via Map, timeline state in memory, thumbnails cached separately ✅
 
 ### FFmpeg Integration ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
@@ -124,6 +134,21 @@ React Frontend (TypeScript + Vite)
 - **Boundary Resolution**: Smart clip selection at exact boundaries
 - **Audio Mixing**: Web Audio API with gain nodes for balanced system audio + microphone mixing
 - **Zoom Controls**: Professional zoom UI with presets, real-time display, and multiple input methods
+- **Multi-Track Editing**: Professional multi-track timeline with overlay support
+- **Gap Detection**: Advanced gap detection with blank screen messages
+- **Video Composition**: Canvas-based multi-track video composition
+
+### Multi-Track Editing Patterns ✅ IMPLEMENTED
+- **Track Management**: Professional track controls (mute, solo, lock, visibility)
+- **Video Composition**: Canvas-based real-time multi-track composition
+- **Track Synchronization**: Timeline ruler and content scroll together
+- **Overlay System**: Professional overlay controls for position, size, opacity, blend modes
+- **Gap Detection Logic**: Advanced gap detection with blank screen messages
+- **Drag and Drop**: Move clips between tracks
+- **Multi-Track Recording**: Record directly to specific tracks
+- **Track State Management**: Separate track state with professional controls
+- **Real-Time Preview**: MultiTrackVideoPlayer with gap detection
+- **Professional UI**: Consistent layout with track labels and timeline alignment
 
 ## Design Patterns
 

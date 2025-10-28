@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
 import { TimelineClip } from '../state/editState'
 import { MediaFile } from '../state/mediaStore'
 import { Track } from '../state/trackState'
@@ -12,7 +12,7 @@ interface TrackRowProps {
   totalDuration: number
   pixelsPerSecond: number
   onClipSelect: (clipId: string | null) => void
-  onClipMove: (clipId: string, newStartTime: number) => void
+  onClipMove: (clipId: string, newTrackId: number, newStartTime: number) => void
   onClipRemove: (clipId: string) => void
   onSeek: (time: number) => void
   onTimelineClick: (time: number) => void
@@ -37,6 +37,12 @@ const TrackRow: React.FC<TrackRowProps> = ({
   
   const timeToPixels = (time: number) => time * pixelsPerSecond
   const pixelsToTime = (pixels: number) => pixels / pixelsPerSecond
+
+  // Drag and drop state
+  const [draggedClip, setDraggedClip] = useState<TimelineClip | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const trackRef = useRef<HTMLDivElement>(null)
 
   // Helper function to get media file for a clip
   const getMediaFileForClip = (clip: TimelineClip): MediaFile | null => {
@@ -65,10 +71,79 @@ const TrackRow: React.FC<TrackRowProps> = ({
     onSeek(clampedTime)
   }
 
+  // Drag and drop handlers
+  const handleMouseDown = (e: React.MouseEvent, clip: TimelineClip) => {
+    if (track.locked) return
+    
+    e.preventDefault()
+    e.stopPropagation()
+    
+    const rect = e.currentTarget.getBoundingClientRect()
+    const offset = e.clientX - rect.left
+    setDragOffset(offset)
+    setDraggedClip(clip)
+    setIsDragging(true)
+    onClipSelect(clip.id)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !draggedClip || !trackRef.current) return
+    
+    e.preventDefault()
+    const rect = trackRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left - dragOffset
+    const newTime = pixelsToTime(Math.max(0, x))
+    const clampedTime = Math.max(0, newTime)
+    
+    // Update clip position in real-time
+    onClipMove(draggedClip.id, track.id, clampedTime)
+  }
+
+  const handleMouseUp = () => {
+    if (!isDragging || !draggedClip) return
+    
+    setIsDragging(false)
+    setDraggedClip(null)
+    setDragOffset(0)
+  }
+
+  // Global mouse events for drag and drop
+  React.useEffect(() => {
+    if (isDragging) {
+      const handleGlobalMouseMove = (e: MouseEvent) => {
+        if (!draggedClip || !trackRef.current) return
+        
+        const rect = trackRef.current.getBoundingClientRect()
+        const x = e.clientX - rect.left - dragOffset
+        const newTime = pixelsToTime(Math.max(0, x))
+        const clampedTime = Math.max(0, newTime)
+        
+        onClipMove(draggedClip.id, track.id, clampedTime)
+      }
+
+      const handleGlobalMouseUp = () => {
+        setIsDragging(false)
+        setDraggedClip(null)
+        setDragOffset(0)
+      }
+
+      document.addEventListener('mousemove', handleGlobalMouseMove)
+      document.addEventListener('mouseup', handleGlobalMouseUp)
+
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove)
+        document.removeEventListener('mouseup', handleGlobalMouseUp)
+      }
+    }
+  }, [isDragging, draggedClip, dragOffset, track.id, totalDuration, pixelsPerSecond, onClipMove])
+
   return (
     <div 
+      ref={trackRef}
       className="relative"
       style={{ height: `${track.height}px` }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
     >
       {/* Track Background */}
       <div 
@@ -90,6 +165,7 @@ const TrackRow: React.FC<TrackRowProps> = ({
         {/* Clips */}
         {trackClips.map((clip) => {
           const isSelected = clip.id === selectedClipId
+          const isDragged = draggedClip?.id === clip.id
           const x = timeToPixels(clip.startTime)
           const width = timeToPixels(clip.duration)
           const mediaFile = getMediaFileForClip(clip)
@@ -100,12 +176,13 @@ const TrackRow: React.FC<TrackRowProps> = ({
               key={clip.id}
               className={`
                 absolute top-1 bottom-1 rounded-lg cursor-move select-none overflow-hidden group
-                transition-shadow duration-150
+                transition-all duration-150
                 ${isSelected 
                   ? 'ring-4 ring-blue-400 shadow-glow z-20' 
                   : 'ring-2 ring-gray-500 hover:ring-gray-400 z-10'
                 }
                 ${track.locked ? 'opacity-50 cursor-not-allowed' : ''}
+                ${isDragged ? 'opacity-80 scale-105 shadow-2xl' : ''}
               `}
               style={{
                 left: `${x}px`,
@@ -117,6 +194,7 @@ const TrackRow: React.FC<TrackRowProps> = ({
                     : `linear-gradient(135deg, ${track.color}80 0%, ${track.color}40 100%)`
               }}
               onClick={(e) => handleClipClick(e, clip)}
+              onMouseDown={(e) => handleMouseDown(e, clip)}
             >
               {/* Semi-transparent overlay for text readability */}
               {thumbnail && (
