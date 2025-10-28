@@ -49,18 +49,56 @@ export class VideoComposer {
     
     if (!this.videoElements.has(key)) {
       const video = document.createElement('video')
-      video.src = mediaFile.path
+      
+      // Try to load video without audio by using a different approach
+      // Create a video element that only loads video tracks
       video.muted = true
+      video.volume = 0
       video.loop = false
       video.preload = 'metadata'
-      video.style.display = 'none' // Hide the video element
-      video.crossOrigin = 'anonymous' // Required for canvas operations
+      video.style.display = 'none'
+      video.crossOrigin = 'anonymous'
+      
+      // Set attributes to disable audio
+      video.setAttribute('muted', 'true')
+      video.setAttribute('volume', '0')
+      video.setAttribute('playsinline', 'true')
+      
+      // Add event listeners to ensure audio stays disabled
+      const ensureMuted = () => {
+        video.muted = true
+        video.volume = 0
+        video.setAttribute('muted', 'true')
+        video.setAttribute('volume', '0')
+        
+        // Try to disable audio tracks
+        if (video.audioTracks) {
+          for (let i = 0; i < video.audioTracks.length; i++) {
+            video.audioTracks[i].enabled = false
+          }
+        }
+      }
+      
+      video.addEventListener('loadedmetadata', ensureMuted)
+      video.addEventListener('canplay', ensureMuted)
+      video.addEventListener('play', ensureMuted)
+      video.addEventListener('timeupdate', ensureMuted)
+      
+      // Set source after setting up event listeners
+      video.src = mediaFile.path
       
       // Add to DOM to ensure proper loading
       document.body.appendChild(video)
       
       this.videoElements.set(key, video)
     }
+    
+    // Ensure video remains muted every time we access it
+    const video = this.videoElements.get(key)!
+    video.muted = true
+    video.volume = 0
+    video.setAttribute('muted', 'true')
+    video.setAttribute('volume', '0')
     
     return this.videoElements.get(key)!
   }
@@ -69,6 +107,19 @@ export class VideoComposer {
    * Update video element time based on global timeline time
    */
   private updateVideoTime(video: HTMLVideoElement, clip: TimelineClip, globalTime: number, isPlaying: boolean): void {
+    // Aggressively ensure video is always muted
+    video.muted = true
+    video.volume = 0
+    video.setAttribute('muted', 'true')
+    video.setAttribute('volume', '0')
+    
+    // Disable audio tracks if possible
+    if (video.audioTracks) {
+      for (let i = 0; i < video.audioTracks.length; i++) {
+        video.audioTracks[i].enabled = false
+      }
+    }
+    
     if (globalTime < clip.startTime || globalTime > clip.startTime + clip.duration) {
       // Video is outside its time range
       if (!video.paused) {

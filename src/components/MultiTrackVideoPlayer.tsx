@@ -33,6 +33,7 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const composerRef = useRef<VideoComposer | null>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const animationFrameRef = useRef<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,6 +67,27 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
     }
   }, [])
 
+  // Initialize audio element for main track
+  useEffect(() => {
+    if (!audioRef.current) return
+
+    const audio = audioRef.current
+    audio.preload = 'metadata'
+    audio.crossOrigin = 'anonymous'
+    
+    // Ensure audio element is completely separate from video elements
+    audio.style.display = 'none'
+    audio.muted = false
+    audio.volume = volume
+    
+    console.log('🔊 Audio element initialized')
+    
+    return () => {
+      audio.pause()
+      audio.src = ''
+    }
+  }, [volume])
+
   // Handle canvas resize
   useEffect(() => {
     const handleResize = () => {
@@ -87,6 +109,56 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+
+  // Handle main track audio playback
+  useEffect(() => {
+    if (!audioRef.current) return
+
+    const audio = audioRef.current
+    
+    // Ensure audio element is properly configured
+    audio.muted = false // Audio element should NOT be muted
+    audio.volume = isMuted ? 0 : volume
+    
+    // Find the main track (track 0) clip that should be playing at current time
+    const mainTrackClip = clips.find(clip => 
+      clip.trackId === 0 && 
+      currentTime >= clip.startTime && 
+      currentTime <= clip.startTime + clip.duration
+    )
+    
+    if (mainTrackClip) {
+      const mediaFile = mediaFiles.find(f => f.id === mainTrackClip.mediaFileId)
+      if (mediaFile && audio.src !== mediaFile.path) {
+        audio.src = mediaFile.path
+        console.log('🔊 Loading main track audio:', mediaFile.name)
+      }
+      
+      // Calculate the audio time based on clip timing
+      const localTime = currentTime - mainTrackClip.startTime
+      const audioTime = mainTrackClip.trimStart + localTime
+      
+      // Only seek if the time difference is significant
+      if (Math.abs(audio.currentTime - audioTime) > 0.1) {
+        audio.currentTime = audioTime
+      }
+      
+      // Sync play/pause with video
+      if (isPlaying && audio.paused) {
+        console.log('🔊 Starting audio playback')
+        audio.play().catch(console.error)
+      } else if (!isPlaying && !audio.paused) {
+        console.log('🔊 Pausing audio playback')
+        audio.pause()
+      }
+    } else {
+      // No main track active, pause audio
+      if (!audio.paused) {
+        console.log('🔊 No main track active, pausing audio')
+        audio.pause()
+      }
+    }
+  }, [clips, mediaFiles, currentTime, isPlaying, volume, isMuted])
 
   // Time advancement effect - advance time and trigger composition
   useEffect(() => {
@@ -143,15 +215,26 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
   const handleVolumeChange = useCallback((newVolume: number) => {
     setVolume(newVolume)
     setIsMuted(newVolume === 0)
+    
+    // Apply volume to audio element
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume
+    }
   }, [])
 
   const handleMuteToggle = useCallback(() => {
     if (isMuted) {
       setVolume(1)
       setIsMuted(false)
+      if (audioRef.current) {
+        audioRef.current.volume = 1
+      }
     } else {
       setVolume(0)
       setIsMuted(true)
+      if (audioRef.current) {
+        audioRef.current.volume = 0
+      }
     }
   }, [isMuted])
 
@@ -191,6 +274,13 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
 
   return (
     <div className={`bg-black rounded-lg overflow-hidden flex flex-col ${className}`}>
+      {/* Hidden Audio Element for Main Track */}
+      <audio
+        ref={audioRef}
+        style={{ display: 'none' }}
+        preload="metadata"
+      />
+      
       {/* Canvas Video Element */}
       <div className="relative flex-1 flex items-center justify-center bg-black min-h-0">
         <canvas
