@@ -26,7 +26,7 @@ const ScreenCapture: React.FC<ScreenCaptureProps> = ({
 
       // Request screen capture with more flexible constraints
       console.log('🖥️ Calling getDisplayMedia...')
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           // Remove mediaSource constraint to allow any screen/window
           width: { ideal: 1920 },
@@ -35,6 +35,64 @@ const ScreenCapture: React.FC<ScreenCaptureProps> = ({
         },
         audio: true
       })
+
+      // Request microphone access for voice recording
+      console.log('🎤 Requesting microphone access...')
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      })
+
+      // Create Web Audio context for mixing
+      const audioContext = new AudioContext()
+      
+      // Create audio sources
+      const screenAudioSource = audioContext.createMediaStreamSource(screenStream)
+      const micAudioSource = audioContext.createMediaStreamSource(micStream)
+      
+      // Create gain nodes for volume control
+      const screenGain = audioContext.createGain()
+      const micGain = audioContext.createGain()
+      
+      // Set volume levels (adjust as needed)
+      screenGain.gain.value = 0.7  // System audio at 70%
+      micGain.gain.value = 1.0     // Microphone at 100%
+      
+      // Create destination for mixed audio
+      const destination = audioContext.createMediaStreamDestination()
+      
+      // Connect audio sources to gain nodes, then to destination
+      screenAudioSource.connect(screenGain)
+      micAudioSource.connect(micGain)
+      screenGain.connect(destination)
+      micGain.connect(destination)
+      
+      // Create final combined stream
+      const combinedStream = new MediaStream()
+      
+      // Add video track from screen
+      screenStream.getVideoTracks().forEach(track => {
+        combinedStream.addTrack(track)
+      })
+      
+      // Add mixed audio track
+      destination.stream.getAudioTracks().forEach(track => {
+        combinedStream.addTrack(track)
+      })
+
+      console.log('🖥️ Audio mixing successful!')
+      console.log('🖥️ Combined stream created:', combinedStream)
+      console.log('🖥️ Stream tracks:', combinedStream.getTracks())
+      console.log('🖥️ Video tracks:', combinedStream.getVideoTracks())
+      console.log('🖥️ Audio tracks:', combinedStream.getAudioTracks())
+      console.log('🎤 Microphone audio tracks:', micStream.getAudioTracks())
+      console.log('🖥️ Screen audio tracks:', screenStream.getAudioTracks())
+      console.log('🔊 Mixed audio: System sound + Microphone voice')
+      
+      const stream = combinedStream
       
       console.log('🖥️ Screen capture successful:', stream)
       console.log('🖥️ Stream tracks:', stream.getTracks())

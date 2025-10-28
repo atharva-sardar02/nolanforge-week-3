@@ -20,6 +20,7 @@ const CombinedCapture: React.FC<CombinedCaptureProps> = ({
   const [showRequestButton, setShowRequestButton] = useState(true)
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null)
+  const [micStream, setMicStream] = useState<MediaStream | null>(null)
   const [combinedStream, setCombinedStream] = useState<MediaStream | null>(null)
 
   // Create canvas-based combined stream
@@ -83,13 +84,8 @@ const CombinedCapture: React.FC<CombinedCaptureProps> = ({
     // Start drawing
     drawFrame()
 
-    // Add audio tracks to canvas stream
-    screenStream.getAudioTracks().forEach(track => {
-      canvasStream.addTrack(track)
-    })
-    webcamStream.getAudioTracks().forEach(track => {
-      canvasStream.addTrack(track)
-    })
+    // Note: Audio tracks will be mixed and added in the calling function
+    // This canvas stream only handles video composition
 
     return canvasStream
   }
@@ -122,6 +118,16 @@ const CombinedCapture: React.FC<CombinedCaptureProps> = ({
         audio: true // Include microphone audio
       })
 
+      console.log('🎤 Requesting additional microphone access...')
+      // Request additional microphone access for better audio quality
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      })
+
       console.log('🎥 Both streams captured successfully')
       console.log('🖥️ Screen stream:', screenStream)
       console.log('📷 Webcam stream:', webcamStream)
@@ -129,6 +135,7 @@ const CombinedCapture: React.FC<CombinedCaptureProps> = ({
       // Store streams for cleanup
       setScreenStream(screenStream)
       setWebcamStream(webcamStream)
+      setMicStream(micStream)
 
       // Update states
       setHasRequested(true)
@@ -162,10 +169,49 @@ const CombinedCapture: React.FC<CombinedCaptureProps> = ({
             
             // Create canvas-based combined stream
             const canvasStream = createCanvasStream(screenStream, webcamStream)
+            
+            // Create Web Audio context for mixing all audio sources
+            const audioContext = new AudioContext()
+            
+            // Create audio sources
+            const screenAudioSource = audioContext.createMediaStreamSource(screenStream)
+            const webcamAudioSource = audioContext.createMediaStreamSource(webcamStream)
+            const micAudioSource = audioContext.createMediaStreamSource(micStream)
+            
+            // Create gain nodes for volume control
+            const screenGain = audioContext.createGain()
+            const webcamGain = audioContext.createGain()
+            const micGain = audioContext.createGain()
+            
+            // Set volume levels (adjust as needed)
+            screenGain.gain.value = 0.6  // System audio at 60%
+            webcamGain.gain.value = 0.8  // Webcam audio at 80%
+            micGain.gain.value = 1.0     // Microphone at 100%
+            
+            // Create destination for mixed audio
+            const destination = audioContext.createMediaStreamDestination()
+            
+            // Connect audio sources to gain nodes, then to destination
+            screenAudioSource.connect(screenGain)
+            webcamAudioSource.connect(webcamGain)
+            micAudioSource.connect(micGain)
+            screenGain.connect(destination)
+            webcamGain.connect(destination)
+            micGain.connect(destination)
+            
+            // Add mixed audio track to canvas stream
+            destination.stream.getAudioTracks().forEach(track => {
+              canvasStream.addTrack(track)
+            })
+            
+            console.log('🔊 Audio mixing successful for combined recording!')
+            console.log('🎤 Mixed audio: System sound + Webcam audio + Microphone voice')
+            
             setCombinedStream(canvasStream)
             
             console.log('🎥 Canvas stream created:', canvasStream)
             console.log('🎥 Canvas tracks:', canvasStream.getTracks())
+            console.log('🎥 Audio tracks:', canvasStream.getAudioTracks())
             
             onStreamReady?.(canvasStream)
             console.log('🎥 Combined stream ready for recording')
@@ -207,6 +253,10 @@ const CombinedCapture: React.FC<CombinedCaptureProps> = ({
     if (webcamStream) {
       webcamStream.getTracks().forEach(track => track.stop())
       setWebcamStream(null)
+    }
+    if (micStream) {
+      micStream.getTracks().forEach(track => track.stop())
+      setMicStream(null)
     }
     if (combinedStream) {
       combinedStream.getTracks().forEach(track => track.stop())
