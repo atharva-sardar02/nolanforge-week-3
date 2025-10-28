@@ -2,14 +2,12 @@ import React from 'react'
 
 interface PlayheadProps {
   currentTime: number
-  totalDuration: number
   pixelsPerSecond: number
   className?: string
 }
 
 const Playhead: React.FC<PlayheadProps> = ({
   currentTime,
-  totalDuration,
   pixelsPerSecond,
   className = ''
 }) => {

@@ -26,7 +26,6 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
   
   const {
     isRecording,
-    duration,
     error,
     startRecording,
     stopRecording,

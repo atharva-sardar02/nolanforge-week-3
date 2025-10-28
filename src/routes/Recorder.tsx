@@ -14,7 +14,7 @@ const Recorder: React.FC = () => {
   const [currentStream, setCurrentStream] = useState<MediaStream | null>(null)
   
   const { addFile } = useMediaStore()
-  const { settings, recordedBlob, resetRecording, duration } = useRecordingState()
+  const { settings, resetRecording, duration } = useRecordingState()
   
   // Handle recording start
   const handleRecordingStart = () => {

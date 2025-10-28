@@ -5,7 +5,6 @@ interface TrackLaneProps {
   trackId: number
   clips: TimelineClip[]
   selectedClipId: string | null
-  totalDuration: number
   pixelsPerSecond: number
   onClipSelect: (clipId: string) => void
   onClipMove: (clipId: string, newStartTime: number) => void
@@ -17,7 +16,6 @@ const TrackLane: React.FC<TrackLaneProps> = ({
   trackId,
   clips,
   selectedClipId,
-  totalDuration,
   pixelsPerSecond,
   onClipSelect,
   onClipMove,

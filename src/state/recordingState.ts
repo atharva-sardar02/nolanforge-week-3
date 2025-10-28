@@ -184,7 +184,7 @@ export const useRecordingState = create<RecordingState>((set, get) => ({
 }))
 
 // Auto-update duration every second when recording
-let durationInterval: NodeJS.Timeout | null = null
+let durationInterval: number | null = null
 
 useRecordingState.subscribe((state) => {
   if (state.isRecording && !durationInterval) {

@@ -37,15 +37,12 @@ export interface UseMediaRecorderReturn {
 
 export const useMediaRecorder = (options: MediaRecorderOptions = {}, externalStream?: MediaStream | null): UseMediaRecorderReturn => {
   const {
-    setStatus,
     setError,
     setRecordedBlob,
     setVideoStream,
     setAudioStream,
-    setDuration,
     startRecording: startRecordingState,
     stopRecording: stopRecordingState,
-    resetRecording,
     settings,
     status,
     duration,
@@ -123,7 +120,6 @@ export const useMediaRecorder = (options: MediaRecorderOptions = {}, externalStr
       
       const constraints: MediaStreamConstraints = {
         video: {
-          mediaSource: 'screen',
           width: { ideal: settings.resolution.width },
           height: { ideal: settings.resolution.height },
           frameRate: { ideal: settings.frameRate }
