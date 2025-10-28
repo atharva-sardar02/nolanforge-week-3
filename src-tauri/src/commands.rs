@@ -223,13 +223,146 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
     let main_video_path = temp_dir.join("main_video.mp4");
     let main_audio_path = temp_dir.join("main_audio.mp3");
 
-    // Extract audio from main track clips
-    for clip in &main_track_clips {
+    println!("🔍 Debug: Processing {} main track clips", main_track_clips.len());
+
+    // Sort main track clips by start time
+    let mut sorted_main_clips = main_track_clips.clone();
+    sorted_main_clips.sort_by(|a, b| a.start_time.partial_cmp(&b.start_time).unwrap());
+
+    // Calculate total duration and create a single video with proper timing
+    let total_duration = options.global_trim_end - options.global_trim_start;
+    
+    // Create a black background video for the full duration
+    let background_path = temp_dir.join("background.mp4");
+    let output = Command::new("ffmpeg")
+        .arg("-f")
+        .arg("lavfi")
+        .arg("-i")
+        .arg("color=black:size=1920x1080:duration=0.1") // Create a short black video
+        .arg("-vf")
+        .arg(&format!("scale=1920:1080,loop=loop=-1:size=1:start=0"))
+        .arg("-t")
+        .arg(total_duration.to_string())
+        .arg("-c:v")
+        .arg("libx264")
+        .arg("-y")
+        .arg(&background_path)
+        .output();
+
+    match output {
+        Ok(result) => {
+            if !result.status.success() {
+                let error_msg = String::from_utf8_lossy(&result.stderr);
+                return Err(format!("FFmpeg error creating background: {}", error_msg));
+            }
+        }
+        Err(e) => {
+            return Err(format!("Failed to execute FFmpeg for background: {}", e));
+        }
+    }
+
+    // Process each main track clip and overlay it at the correct time
+    let mut filter_inputs = Vec::new();
+    let mut filter_complex_parts = Vec::new();
+    
+    // Add background as input 0
+    filter_inputs.push(background_path.to_string_lossy().to_string());
+    
+    for (i, clip) in sorted_main_clips.iter().enumerate() {
         let duration = clip.trim_end - clip.trim_start;
         if duration <= 0.0 {
             continue;
         }
 
+        let clip_path = temp_dir.join(format!("main_clip_{}.mp4", i));
+        
+        // Create trimmed clip (video only)
+        let output = Command::new("ffmpeg")
+            .arg("-ss")
+            .arg(clip.trim_start.to_string())
+            .arg("-i")
+            .arg(&clip.input_path)
+            .arg("-t")
+            .arg(duration.to_string())
+            .arg("-an") // No audio for individual clips
+            .arg("-c:v")
+            .arg("libx264")
+            .arg("-y")
+            .arg(&clip_path)
+            .output();
+
+        match output {
+            Ok(result) => {
+                if !result.status.success() {
+                    let error_msg = String::from_utf8_lossy(&result.stderr);
+                    return Err(format!("FFmpeg error creating main clip {}: {}", i, error_msg));
+                }
+                filter_inputs.push(clip_path.to_string_lossy().to_string());
+                
+                // Calculate when this clip should start (relative to global trim start)
+                let clip_start_time = clip.start_time - options.global_trim_start;
+                let clip_end_time = clip_start_time + duration;
+                
+                println!("🔍 Debug: Main clip {} starts at {}s, ends at {}s", i, clip_start_time, clip_end_time);
+                
+                // Create overlay filter for this clip
+                let input_idx = i + 1; // Input index (0 is background)
+                let filter_part = format!("[{}:v]scale=1920:1080[main{}];[{}][main{}]overlay=0:0:enable='between(t,{},{})'[out{}]", 
+                    input_idx, i, 
+                    if i == 0 { "0:v" } else { &format!("out{}", i-1) }, i,
+                    clip_start_time, clip_end_time, i);
+                filter_complex_parts.push(filter_part);
+            }
+            Err(e) => {
+                return Err(format!("Failed to execute FFmpeg for main clip {}: {}", i, e));
+            }
+        }
+    }
+
+    // Build the final filter complex for main video
+    let main_filter_complex = filter_complex_parts.join(";");
+    let final_output_name = if sorted_main_clips.len() > 1 { 
+        format!("out{}", sorted_main_clips.len() - 1) 
+    } else { 
+        "0:v".to_string() 
+    };
+    
+    println!("🔍 Debug: Main filter complex: {}", main_filter_complex);
+    println!("🔍 Debug: Final output name: {}", final_output_name);
+
+    // Create the main video with proper timing
+    let mut main_cmd = Command::new("ffmpeg");
+    for input in &filter_inputs {
+        main_cmd.arg("-i").arg(input);
+    }
+    main_cmd.arg("-filter_complex").arg(&main_filter_complex);
+    main_cmd.arg("-map").arg(&format!("[{}]", final_output_name));
+    main_cmd.arg("-c:v").arg("libx264");
+    main_cmd.arg("-y").arg(&main_video_path);
+
+    let output = main_cmd.output();
+    match output {
+        Ok(result) => {
+            if !result.status.success() {
+                let error_msg = String::from_utf8_lossy(&result.stderr);
+                return Err(format!("FFmpeg error creating main video: {}", error_msg));
+            }
+        }
+        Err(e) => {
+            return Err(format!("Failed to execute FFmpeg for main video: {}", e));
+        }
+    }
+
+    // Extract audio from all main track clips
+    let mut audio_clip_paths = Vec::new();
+    for (i, clip) in main_track_clips.iter().enumerate() {
+        let duration = clip.trim_end - clip.trim_start;
+        if duration <= 0.0 {
+            continue;
+        }
+
+        let audio_clip_path = temp_dir.join(format!("main_audio_{}.mp3", i));
+        
         // Extract audio from this clip
         let output = Command::new("ffmpeg")
             .arg("-ss")
@@ -242,6 +375,45 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
             .arg("-acodec")
             .arg("mp3")
             .arg("-y")
+            .arg(&audio_clip_path)
+            .output();
+
+        match output {
+            Ok(result) => {
+                if !result.status.success() {
+                    let error_msg = String::from_utf8_lossy(&result.stderr);
+                    return Err(format!("FFmpeg error extracting audio from clip {}: {}", i, error_msg));
+                }
+                audio_clip_paths.push(audio_clip_path);
+            }
+            Err(e) => {
+                return Err(format!("Failed to execute FFmpeg for audio extraction from clip {}: {}", i, e));
+            }
+        }
+    }
+
+    // Concatenate all audio clips
+    if audio_clip_paths.len() > 1 {
+        let audio_concat_file = temp_dir.join("audio_concat_list.txt");
+        let mut audio_concat_content = String::new();
+        for audio_path in &audio_clip_paths {
+            audio_concat_content.push_str(&format!("file '{}'\n", audio_path.display()));
+        }
+        
+        fs::write(&audio_concat_file, audio_concat_content)
+            .map_err(|e| format!("Failed to write audio concat file: {}", e))?;
+
+        // Concatenate audio clips
+        let output = Command::new("ffmpeg")
+            .arg("-f")
+            .arg("concat")
+            .arg("-safe")
+            .arg("0")
+            .arg("-i")
+            .arg(&audio_concat_file)
+            .arg("-c:a")
+            .arg("mp3")
+            .arg("-y")
             .arg(&main_audio_path)
             .output();
 
@@ -249,49 +421,17 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
             Ok(result) => {
                 if !result.status.success() {
                     let error_msg = String::from_utf8_lossy(&result.stderr);
-                    return Err(format!("FFmpeg error extracting audio: {}", error_msg));
+                    return Err(format!("FFmpeg error concatenating audio clips: {}", error_msg));
                 }
             }
             Err(e) => {
-                return Err(format!("Failed to execute FFmpeg for audio extraction: {}", e));
+                return Err(format!("Failed to execute FFmpeg for audio concatenation: {}", e));
             }
         }
-        break; // Only use the first main track clip for audio
-    }
-
-    // Create main video track (video only, no audio)
-    for clip in &main_track_clips {
-        let duration = clip.trim_end - clip.trim_start;
-        if duration <= 0.0 {
-            continue;
-        }
-
-        let output = Command::new("ffmpeg")
-            .arg("-ss")
-            .arg(clip.trim_start.to_string())
-            .arg("-i")
-            .arg(&clip.input_path)
-            .arg("-t")
-            .arg(duration.to_string())
-            .arg("-an") // No audio
-            .arg("-c:v")
-            .arg("libx264")
-            .arg("-y")
-            .arg(&main_video_path)
-            .output();
-
-        match output {
-            Ok(result) => {
-                if !result.status.success() {
-                    let error_msg = String::from_utf8_lossy(&result.stderr);
-                    return Err(format!("FFmpeg error creating main video: {}", error_msg));
-                }
-            }
-            Err(e) => {
-                return Err(format!("Failed to execute FFmpeg for main video: {}", e));
-            }
-        }
-        break; // Only use the first main track clip for video
+    } else if audio_clip_paths.len() == 1 {
+        // Just copy the single audio clip
+        fs::copy(&audio_clip_paths[0], &main_audio_path)
+            .map_err(|e| format!("Failed to copy audio clip: {}", e))?;
     }
 
     // Step 2: Create overlay videos if any
@@ -349,9 +489,13 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
     // Build filter complex for video composition
     let mut filter_complex = String::new();
     
+    println!("🔍 Debug: Processing {} overlay videos", overlay_videos.len());
+    println!("🔍 Debug: {} overlay clips provided", overlay_clips.len());
+    
     if overlay_videos.is_empty() {
         // No overlays, just use main video
         filter_complex.push_str("[0:v]scale=1920:1080[video]");
+        println!("🔍 Debug: No overlays, using main video only");
     } else {
         // Scale main video
         filter_complex.push_str("[0:v]scale=1920:1080[main];");
@@ -362,9 +506,12 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
                 let input_idx = i + 1; // Overlay inputs start from index 1
                 
                 // Get overlay properties
-                let (_x, _y) = clip.overlay_position.unwrap_or((0.0, 0.0));
+                let (x, y) = clip.overlay_position.unwrap_or((0.0, 0.0));
                 let (width, height) = clip.overlay_size.unwrap_or((640.0, 360.0));
                 let opacity = clip.overlay_opacity.unwrap_or(0.8);
+                
+                println!("🔍 Debug: Overlay {} - Position: ({}, {}), Size: {}x{}, Opacity: {}", 
+                    i, x, y, width, height, opacity);
                 
                 // Scale overlay
                 filter_complex.push_str(&format!("[{}:v]scale={}:{}[overlay{}_scaled];", 
@@ -376,15 +523,30 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
             }
         }
         
-        // Chain overlays together
+        // Chain overlays together with proper positioning and timing
         let mut current_input = "main".to_string();
         for i in 0..overlay_videos.len() {
             let output_name = if i == overlay_videos.len() - 1 { "video" } else { &format!("overlay{}", i) };
-            filter_complex.push_str(&format!("[{}][overlay{}_alpha]overlay={}:{}[{}]", 
-                current_input, i, 
-                overlay_clips[i].overlay_position.unwrap_or((0.0, 0.0)).0 as i32,
-                overlay_clips[i].overlay_position.unwrap_or((0.0, 0.0)).1 as i32,
-                output_name));
+            
+            // Get the actual position for this overlay
+            let (x, y) = overlay_clips[i].overlay_position.unwrap_or((0.0, 0.0));
+            
+            // Calculate when this overlay should appear (relative to global trim start)
+            let overlay_start_time = overlay_clips[i].start_time - options.global_trim_start;
+            let overlay_end_time = overlay_start_time + (overlay_clips[i].trim_end - overlay_clips[i].trim_start);
+            
+            println!("🔍 Debug: Overlay {} Timeline Info:", i);
+            println!("  📍 Position: ({}, {})", x, y);
+            println!("  ⏰ Original start_time: {}s", overlay_clips[i].start_time);
+            println!("  ⏰ Global trim start: {}s", options.global_trim_start);
+            println!("  ⏰ Relative start_time: {}s", overlay_start_time);
+            println!("  ⏰ Duration: {}s", overlay_clips[i].trim_end - overlay_clips[i].trim_start);
+            println!("  ⏰ End time: {}s", overlay_end_time);
+            println!("  🎬 Will appear from {}s to {}s", overlay_start_time, overlay_end_time);
+            
+            // Use enable parameter to control when overlay appears
+            filter_complex.push_str(&format!("[{}][overlay{}_alpha]overlay={}:{}:enable='between(t,{},{})'[{}]", 
+                current_input, i, x as i32, y as i32, overlay_start_time, overlay_end_time, output_name));
             
             if i < overlay_videos.len() - 1 {
                 filter_complex.push_str(";");
@@ -392,6 +554,8 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
             }
         }
     }
+    
+    println!("🔍 Debug: Filter complex: {}", filter_complex);
 
     // Build final FFmpeg command
     let mut cmd = Command::new("ffmpeg");
