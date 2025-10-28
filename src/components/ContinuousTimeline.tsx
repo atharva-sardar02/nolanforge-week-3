@@ -16,6 +16,7 @@ interface TimelineProps {
   onSeek: (time: number) => void
   onGlobalTrimStartChange: (time: number) => void
   onGlobalTrimEndChange: (time: number) => void
+  onZoomChange?: (zoomLevel: number) => void
   className?: string
 }
 
@@ -33,6 +34,7 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
   onSeek,
   onGlobalTrimStartChange,
   onGlobalTrimEndChange,
+  onZoomChange,
   className = ''
 }) => {
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -81,6 +83,30 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
     container.addEventListener('scroll', handleScroll)
     return () => container.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Mouse wheel zoom support
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || !onZoomChange) return
+    
+    const handleWheel = (e: WheelEvent) => {
+      // Only zoom when Ctrl is pressed
+      if (!e.ctrlKey) return
+      
+      e.preventDefault()
+      
+      const delta = e.deltaY > 0 ? -25 : 25 // Zoom out on scroll down, zoom in on scroll up
+      const newZoom = Math.max(10, Math.min(200, pixelsPerSecond + delta))
+      
+      if (newZoom !== pixelsPerSecond) {
+        console.log('🔍 Mouse wheel zoom:', newZoom)
+        onZoomChange(newZoom)
+      }
+    }
+    
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [pixelsPerSecond, onZoomChange])
 
   const handleTimelineClick = (e: React.MouseEvent) => {
     if (isDragging || isDraggingPlayhead) return

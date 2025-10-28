@@ -26,13 +26,44 @@ const Editor: React.FC = () => {
     splitClipAtPlayhead,
     getTotalDuration,
     setGlobalTrimStart,
-    setGlobalTrimEnd
+    setGlobalTrimEnd,
+    setZoomLevel
   } = useEditState()
 
   const { exportMultiClipVideo, isExporting, error: exportError, success } = useExport()
 
   const [currentDisplayClip, setCurrentDisplayClip] = useState<any>(null)
   const [localTime, setLocalTime] = useState(0)
+
+  // Keyboard shortcuts for zoom
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle zoom shortcuts when Ctrl is pressed
+      if (!e.ctrlKey) return
+      
+      switch (e.key) {
+        case '+':
+        case '=':
+          e.preventDefault()
+          setZoomLevel(Math.min(200, zoomLevel + 25))
+          console.log('🔍 Zoom In:', Math.min(200, zoomLevel + 25))
+          break
+        case '-':
+          e.preventDefault()
+          setZoomLevel(Math.max(10, zoomLevel - 25))
+          console.log('🔍 Zoom Out:', Math.max(10, zoomLevel - 25))
+          break
+        case '0':
+          e.preventDefault()
+          setZoomLevel(50)
+          console.log('🔍 Zoom Reset: 50')
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [zoomLevel, setZoomLevel])
   const [forcePlay, setForcePlay] = useState(false) // Force play trigger
 
   // Timeline tool handlers
@@ -534,6 +565,7 @@ const Editor: React.FC = () => {
               onSeek={handleContinuousTimelineSeek}
               onGlobalTrimStartChange={setGlobalTrimStart}
               onGlobalTrimEndChange={setGlobalTrimEnd}
+              onZoomChange={setZoomLevel}
             />
           )}
 
@@ -545,6 +577,114 @@ const Editor: React.FC = () => {
               canSplit={!!selectedClipId}
               canDelete={!!selectedClipId}
             />
+          )}
+
+          {/* Timeline Zoom Controls */}
+          {timelineClips.length > 0 && (
+            <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                  <span className="text-2xl">🔍</span>
+                  <span>Timeline Zoom</span>
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 text-sm">
+                    Current: {Math.round(zoomLevel)}px/s
+                  </span>
+                  <span className="text-gray-500 text-sm">
+                    ({Math.round((zoomLevel / 50) * 100)}%)
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-center gap-4">
+                {/* Zoom Out Button */}
+                <button
+                  onClick={() => setZoomLevel(Math.max(10, zoomLevel - 25))}
+                  disabled={zoomLevel <= 10}
+                  className="group relative w-12 h-12 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-gray-500/25"
+                  title="Zoom Out (Ctrl + -)"
+                >
+                  <div className="absolute inset-0 rounded-lg bg-gray-600/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative z-10 text-white text-xl font-bold">
+                    −
+                  </div>
+                </button>
+
+                {/* Zoom Reset Button */}
+                <button
+                  onClick={() => setZoomLevel(50)}
+                  className="group relative px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/25"
+                  title="Reset Zoom (Ctrl + 0)"
+                >
+                  <div className="absolute inset-0 rounded-lg bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative z-10 flex items-center gap-2">
+                    <span className="text-lg">🎯</span>
+                    <span>Reset</span>
+                  </div>
+                </button>
+
+                {/* Zoom In Button */}
+                <button
+                  onClick={() => setZoomLevel(Math.min(200, zoomLevel + 25))}
+                  disabled={zoomLevel >= 200}
+                  className="group relative w-12 h-12 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-gray-500/25"
+                  title="Zoom In (Ctrl + +)"
+                >
+                  <div className="absolute inset-0 rounded-lg bg-gray-600/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative z-10 text-white text-xl font-bold">
+                    +
+                  </div>
+                </button>
+              </div>
+
+              {/* Zoom Presets */}
+              <div className="mt-4 pt-4 border-t border-gray-700/30">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-gray-400 text-sm font-medium">Quick Zoom:</span>
+                  <div className="flex gap-2">
+                    {[25, 50, 100, 150, 200].map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => setZoomLevel(level)}
+                        className={`px-3 py-1 rounded-lg font-medium text-sm transition-colors ${
+                          zoomLevel === level
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                        title={`${level}px/s (${Math.round((level / 50) * 100)}%)`}
+                      >
+                        {Math.round((level / 50) * 100)}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Keyboard Shortcuts Info */}
+              <div className="mt-4 pt-4 border-t border-gray-700/30">
+                <div className="flex items-center justify-center gap-6 text-sm text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">Ctrl</kbd>
+                    <span>+</span>
+                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">+</kbd>
+                    <span>Zoom In</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">Ctrl</kbd>
+                    <span>+</span>
+                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">-</kbd>
+                    <span>Zoom Out</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">Ctrl</kbd>
+                    <span>+</span>
+                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">0</kbd>
+                    <span>Reset</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Individual Clip Timeline - For trimming selected clip */}
