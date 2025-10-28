@@ -16,6 +16,7 @@ pub fn run() {
             greet,
             commands::export_trimmed_video,
             commands::export_multi_clip_video,
+            commands::export_multi_track_video,
             commands::check_ffmpeg,
             commands::save_recording_to_file
         ])

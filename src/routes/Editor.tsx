@@ -33,7 +33,7 @@ const Editor: React.FC = () => {
     setZoomLevel
   } = useEditState()
 
-  const { exportMultiClipVideo, isExporting, error: exportError, success } = useExport()
+  const { exportMultiClipVideo, exportMultiTrackVideo, isExporting, error: exportError, success } = useExport()
 
   const [currentDisplayClip, setCurrentDisplayClip] = useState<any>(null)
   const [localTime, setLocalTime] = useState(0)
@@ -272,63 +272,120 @@ const Editor: React.FC = () => {
     }
 
     try {
-      const mainTrackClips = timelineClips
-        .filter(c => c.trackId === 0)
-        .sort((a, b) => a.startTime - b.startTime)
-      
       // Use global trim range (default to full timeline if not set)
       const exportStart = globalTrimStart
       const exportEnd = globalTrimEnd || totalDuration
       
       console.log(`📤 Exporting from ${exportStart}s to ${exportEnd}s (total: ${exportEnd - exportStart}s)`)
       
-      // Find clips that intersect with the export range
-      const clipsForExport = mainTrackClips
-        .filter(clip => {
-          const clipEnd = clip.startTime + clip.duration
-          // Check if clip intersects with export range
-          return clip.startTime < exportEnd && clipEnd > exportStart
-        })
-        .map(clip => {
-          const mediaFile = getFileById(clip.mediaFileId)
-          const clipEnd = clip.startTime + clip.duration
-          
-          // Calculate how much of this clip falls within the export range
-          const clipExportStart = Math.max(exportStart, clip.startTime)
-          const clipExportEnd = Math.min(exportEnd, clipEnd)
-          
-          // Convert to source video time
-          const timeIntoClip = clipExportStart - clip.startTime
-          const sourceTrimStart = clip.trimStart + timeIntoClip
-          
-          const exportDuration = clipExportEnd - clipExportStart
-          const sourceTrimEnd = sourceTrimStart + exportDuration
-          
-          console.log(`  Clip: ${mediaFile?.name}`)
-          console.log(`    Global range: ${clipExportStart}s - ${clipExportEnd}s`)
-          console.log(`    Source range: ${sourceTrimStart}s - ${sourceTrimEnd}s`)
-          
-          return {
-            inputPath: mediaFile?.originalPath || '',
-            trimStart: sourceTrimStart,
-            trimEnd: sourceTrimEnd,
-            mediaFile
-          }
-        })
+      if (multiTrackMode) {
+        // Multi-track export: compose video with overlays and main track audio
+        const clipsForExport = timelineClips
+          .filter(clip => {
+            const clipEnd = clip.startTime + clip.duration
+            // Check if clip intersects with export range
+            return clip.startTime < exportEnd && clipEnd > exportStart
+          })
+          .map(clip => {
+            const mediaFile = getFileById(clip.mediaFileId)
+            const clipEnd = clip.startTime + clip.duration
+            
+            // Calculate how much of this clip falls within the export range
+            const clipExportStart = Math.max(exportStart, clip.startTime)
+            const clipExportEnd = Math.min(exportEnd, clipEnd)
+            
+            // Convert to source video time
+            const timeIntoClip = clipExportStart - clip.startTime
+            const sourceTrimStart = clip.trimStart + timeIntoClip
+            
+            const exportDuration = clipExportEnd - clipExportStart
+            const sourceTrimEnd = sourceTrimStart + exportDuration
+            
+            console.log(`  Multi-track Clip (Track ${clip.trackId}): ${mediaFile?.name}`)
+            console.log(`    Global range: ${clipExportStart}s - ${clipExportEnd}s`)
+            console.log(`    Source range: ${sourceTrimStart}s - ${sourceTrimEnd}s`)
+            
+            return {
+              inputPath: mediaFile?.originalPath || '',
+              trackId: clip.trackId,
+              startTime: clipExportStart,
+              duration: exportDuration,
+              trimStart: sourceTrimStart,
+              trimEnd: sourceTrimEnd,
+              overlayPosition: clip.overlayPosition,
+              overlaySize: clip.overlaySize,
+              overlayOpacity: clip.overlayOpacity,
+              overlayBlendMode: clip.overlayBlendMode,
+            }
+          })
 
-      if (clipsForExport.length === 0) {
-        alert('⚠️ No clips in the selected export range')
+        if (clipsForExport.length === 0) {
+          alert('⚠️ No clips in the selected export range')
           return
-      }
+        }
 
-      const missingPaths = clipsForExport.filter(c => !c.inputPath)
-      if (missingPaths.length > 0) {
-        alert('⚠️ Some clips are missing file paths. Please re-import the files.')
-        return
-      }
+        const missingPaths = clipsForExport.filter(c => !c.inputPath)
+        if (missingPaths.length > 0) {
+          alert('⚠️ Some clips are missing file paths. Please re-import the files.')
+          return
+        }
 
-      console.log(`📤 Exporting ${clipsForExport.length} clip(s)`)
-      await exportMultiClipVideo(clipsForExport)
+        console.log(`📤 Exporting ${clipsForExport.length} multi-track clip(s)`)
+        await exportMultiTrackVideo(clipsForExport, exportStart, exportEnd)
+      } else {
+        // Single-track export: use existing logic
+        const mainTrackClips = timelineClips
+          .filter(c => c.trackId === 0)
+          .sort((a, b) => a.startTime - b.startTime)
+        
+        // Find clips that intersect with the export range
+        const clipsForExport = mainTrackClips
+          .filter(clip => {
+            const clipEnd = clip.startTime + clip.duration
+            // Check if clip intersects with export range
+            return clip.startTime < exportEnd && clipEnd > exportStart
+          })
+          .map(clip => {
+            const mediaFile = getFileById(clip.mediaFileId)
+            const clipEnd = clip.startTime + clip.duration
+            
+            // Calculate how much of this clip falls within the export range
+            const clipExportStart = Math.max(exportStart, clip.startTime)
+            const clipExportEnd = Math.min(exportEnd, clipEnd)
+            
+            // Convert to source video time
+            const timeIntoClip = clipExportStart - clip.startTime
+            const sourceTrimStart = clip.trimStart + timeIntoClip
+            
+            const exportDuration = clipExportEnd - clipExportStart
+            const sourceTrimEnd = sourceTrimStart + exportDuration
+            
+            console.log(`  Clip: ${mediaFile?.name}`)
+            console.log(`    Global range: ${clipExportStart}s - ${clipExportEnd}s`)
+            console.log(`    Source range: ${sourceTrimStart}s - ${sourceTrimEnd}s`)
+            
+            return {
+              inputPath: mediaFile?.originalPath || '',
+              trimStart: sourceTrimStart,
+              trimEnd: sourceTrimEnd,
+              mediaFile
+            }
+          })
+
+        if (clipsForExport.length === 0) {
+          alert('⚠️ No clips in the selected export range')
+          return
+        }
+
+        const missingPaths = clipsForExport.filter(c => !c.inputPath)
+        if (missingPaths.length > 0) {
+          alert('⚠️ Some clips are missing file paths. Please re-import the files.')
+          return
+        }
+
+        console.log(`📤 Exporting ${clipsForExport.length} clip(s)`)
+        await exportMultiClipVideo(clipsForExport)
+      }
       
     } catch (error) {
       console.error('Export error:', error)

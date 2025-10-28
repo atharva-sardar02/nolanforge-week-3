@@ -17,6 +17,19 @@ export interface ClipForExport {
   mediaFile?: MediaFile
 }
 
+export interface MultiTrackClipForExport {
+  inputPath: string
+  trackId: number
+  startTime: number
+  duration: number
+  trimStart: number
+  trimEnd: number
+  overlayPosition?: { x: number; y: number }
+  overlaySize?: { width: number; height: number }
+  overlayOpacity?: number
+  overlayBlendMode?: string
+}
+
 export interface ExportState {
   isExporting: boolean
   progress: number
@@ -210,10 +223,92 @@ export function useExport() {
     }
   }, [checkFFmpeg, selectOutputPath])
 
+  const exportMultiTrackVideo = useCallback(async (
+    clips: MultiTrackClipForExport[], 
+    globalTrimStart: number, 
+    globalTrimEnd: number
+  ): Promise<boolean> => {
+    // Reset state
+    setState({
+      isExporting: true,
+      progress: 0,
+      error: null,
+      success: false,
+    })
+
+    try {
+      // Check if FFmpeg is available
+      const ffmpegAvailable = await checkFFmpeg()
+      if (!ffmpegAvailable) {
+        setState(prev => ({ ...prev, isExporting: false }))
+        return false
+      }
+
+      setState(prev => ({ ...prev, progress: 10 }))
+
+      // Ask where to save the output
+      const outputPath = await selectOutputPath('multitrack_output.mp4')
+      
+      if (!outputPath) {
+        setState(prev => ({ ...prev, isExporting: false }))
+        return false
+      }
+
+      setState(prev => ({ ...prev, progress: 20 }))
+
+      // Prepare clips data for Rust (convert to snake_case)
+      const clipsData = clips.map(clip => ({
+        input_path: clip.inputPath,
+        track_id: clip.trackId,
+        start_time: clip.startTime,
+        duration: clip.duration,
+        trim_start: clip.trimStart,
+        trim_end: clip.trimEnd,
+        overlay_position: clip.overlayPosition ? [clip.overlayPosition.x, clip.overlayPosition.y] : null,
+        overlay_size: clip.overlaySize ? [clip.overlaySize.width, clip.overlaySize.height] : null,
+        overlay_opacity: clip.overlayOpacity,
+        overlay_blend_mode: clip.overlayBlendMode,
+      }))
+
+      // Call Tauri command to export multi-track video
+      const result = await invoke<string>('export_multi_track_video', { 
+        options: {
+          clips: clipsData,
+          output_path: outputPath,
+          global_trim_start: globalTrimStart,
+          global_trim_end: globalTrimEnd,
+        }
+      })
+      
+      setState({
+        isExporting: false,
+        progress: 100,
+        error: null,
+        success: true,
+      })
+
+      console.log('Multi-track export successful:', result)
+      return true
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Multi-track export failed:', errorMessage)
+      
+      setState({
+        isExporting: false,
+        progress: 0,
+        error: errorMessage,
+        success: false,
+      })
+      
+      return false
+    }
+  }, [checkFFmpeg, selectOutputPath])
+
   return {
     ...state,
     exportVideo,
     exportMultiClipVideo,
+    exportMultiTrackVideo,
     selectInputPath,
     selectOutputPath,
     checkFFmpeg,
