@@ -8,7 +8,11 @@ import { createMediaFile, validateMultipleFiles, getErrorMessage } from '../util
 
 type ViewMode = 'grid' | 'list'
 
-const MediaLibrary: React.FC = () => {
+interface MediaLibraryProps {
+  multiTrackMode?: boolean
+}
+
+const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) => {
   const navigate = useNavigate()
   const { files, selectedFileId, selectFile, removeFile, isLoading, error, addFile, setLoading, setError, clearError } = useMediaStore()
   const { addClipToTimeline, getTotalDuration } = useEditState()
@@ -131,6 +135,14 @@ const MediaLibrary: React.FC = () => {
     // Add to main video track (track 0) at the end of current timeline
     const endTime = getTotalDuration()
     addClipToTimeline(file, 0, endTime)
+    navigate('/editor')
+  }
+
+  const handleAddToTrack = (file: any, trackId: number) => {
+    // Add file to specific track and navigate to editor
+    selectFile(file.id)
+    const endTime = getTotalDuration()
+    addClipToTimeline(file, trackId, endTime)
     navigate('/editor')
   }
 
@@ -448,6 +460,8 @@ const MediaLibrary: React.FC = () => {
               onEdit={handleEdit}
               onPreview={handlePreview}
               onDelete={handleDelete}
+              multiTrackMode={multiTrackMode}
+              onAddToTrack={handleAddToTrack}
             />
           ))}
         </div>
@@ -462,6 +476,8 @@ const MediaLibrary: React.FC = () => {
               onEdit={handleEdit}
               onPreview={handlePreview}
               onDelete={handleDelete}
+              multiTrackMode={multiTrackMode}
+              onAddToTrack={handleAddToTrack}
             />
           ))}
         </div>

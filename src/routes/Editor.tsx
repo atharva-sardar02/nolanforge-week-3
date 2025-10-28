@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import VideoPlayer from '../components/VideoPlayer'
+import MultiTrackVideoPlayer from '../components/MultiTrackVideoPlayer'
 import Timeline from '../components/Timeline'
 import ContinuousTimeline from '../components/ContinuousTimeline'
 import TrimControls from '../components/TrimControls'
 import TimelineTools from '../components/TimelineTools'
+import OverlayControls from '../components/OverlayControls'
 import { useMediaStore } from '../state/mediaStore'
 import { useEditState } from '../state/editState'
 import { useExport } from '../hooks/useExport'
@@ -23,6 +25,7 @@ const Editor: React.FC = () => {
     selectClip,
     removeClipFromTimeline,
     moveClip,
+    updateClip,
     splitClipAtPlayhead,
     getTotalDuration,
     setGlobalTrimStart,
@@ -34,6 +37,7 @@ const Editor: React.FC = () => {
 
   const [currentDisplayClip, setCurrentDisplayClip] = useState<any>(null)
   const [localTime, setLocalTime] = useState(0)
+  const [multiTrackMode, setMultiTrackMode] = useState(false)
 
   // Keyboard shortcuts for zoom
   useEffect(() => {
@@ -118,7 +122,17 @@ const Editor: React.FC = () => {
   }, [exportError])
 
   // Update video display based on currentTime on the global timeline
+  // FORCE REFRESH - Updated debugging
   useEffect(() => {
+    console.log('🚨 EDITOR USEEFFECT CALLED - multiTrackMode:', multiTrackMode, 'currentTime:', currentTime)
+    console.log('🔍 Editor useEffect - multiTrackMode:', multiTrackMode)
+    // Skip single-track logic when in multi-track mode
+    if (multiTrackMode) {
+      console.log('⏭️ Skipping single-track logic - in multi-track mode')
+      return
+    }
+    
+    console.log('🎬 Running single-track logic')
     if (timelineClips.length === 0) {
       setCurrentDisplayClip(null)
       setLocalTime(0)
@@ -211,7 +225,7 @@ const Editor: React.FC = () => {
         selectClip(clipToDisplay.id)
       }
     }
-  }, [currentTime, timelineClips, getFileById, selectClip])
+  }, [currentTime, timelineClips, getFileById, selectClip, multiTrackMode])
 
   // Reset force play trigger after it's been used
   useEffect(() => {
@@ -432,7 +446,33 @@ const Editor: React.FC = () => {
               )}
             </div>
             
-            {currentDisplayClip ? (
+            {multiTrackMode ? (
+              /* Multi-Track Video Player */
+              <div className="w-full" style={{ height: '500px' }}>
+                <MultiTrackVideoPlayer
+                  clips={timelineClips}
+                  mediaFiles={files}
+                  currentTime={currentTime}
+                  totalDuration={getTotalDuration()}
+                  isPlaying={isPlaying}
+                  className="w-full h-full"
+                  onTimeUpdate={(time) => {
+                    // Update global timeline time
+                    setCurrentTime(time)
+                  }}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onSeek={(time) => {
+                    setCurrentTime(time)
+                  }}
+                  onEnded={() => {
+                    console.log('🎬 Multi-track playback ended')
+                    setPlaying(false)
+                  }}
+                />
+              </div>
+            ) : currentDisplayClip ? (
+              /* Single-Track Video Player */
               <div className="w-full" style={{ height: '500px' }}>
                   <VideoPlayer
                   key={currentDisplayClip?.id || 'no-clip'}
@@ -551,23 +591,80 @@ const Editor: React.FC = () => {
 
           {/* Continuous Timeline - Shows all clips */}
           {timelineClips.length > 0 && (
-            <ContinuousTimeline
-              clips={timelineClips}
-              mediaFiles={files}
-              selectedClipId={selectedClipId}
-              currentTime={currentTime}
-              totalDuration={totalDuration}
-              globalTrimStart={globalTrimStart}
-              globalTrimEnd={globalTrimEnd}
-              pixelsPerSecond={zoomLevel}
-              onClipSelect={selectClip}
-              onClipMove={(clipId, newStartTime) => moveClip(clipId, 0, newStartTime)}
-              onClipRemove={removeClipFromTimeline}
-              onSeek={handleContinuousTimelineSeek}
-              onGlobalTrimStartChange={setGlobalTrimStart}
-              onGlobalTrimEndChange={setGlobalTrimEnd}
-              onZoomChange={setZoomLevel}
-            />
+            <div className="space-y-4">
+              {/* Multi-Track Toggle */}
+              <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-4 shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <span className="text-xl">🎵</span>
+                      <span>Timeline Mode</span>
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <span className={multiTrackMode ? 'text-gray-500' : 'text-blue-400'}>Single Track</span>
+                      <span className="text-gray-600">•</span>
+                      <span className={multiTrackMode ? 'text-blue-400' : 'text-gray-500'}>Multi-Track</span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setMultiTrackMode(!multiTrackMode)}
+                    className={`
+                      relative w-16 h-8 rounded-full transition-all duration-300
+                      ${multiTrackMode 
+                        ? 'bg-blue-600 shadow-lg shadow-blue-500/25' 
+                        : 'bg-gray-600 hover:bg-gray-500'
+                      }
+                    `}
+                    title={multiTrackMode ? 'Switch to Single Track' : 'Switch to Multi-Track'}
+                  >
+                    <div 
+                      className={`
+                        absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300
+                        ${multiTrackMode ? 'translate-x-9' : 'translate-x-1'}
+                      `}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                      {multiTrackMode ? '🎵' : '📊'}
+                    </div>
+                  </button>
+                </div>
+                
+                {multiTrackMode && (
+                  <div className="mt-3 p-3 bg-blue-600/20 rounded-xl border border-blue-500/30">
+                    <div className="text-sm text-blue-200">
+                      <div className="font-medium mb-1">🎬 Multi-Track Features:</div>
+                      <ul className="text-xs space-y-1 text-blue-300">
+                        <li>• Track 0: Main video (background)</li>
+                        <li>• Track 1+: Overlay videos (webcam, graphics)</li>
+                        <li>• Individual track controls (mute, solo, lock)</li>
+                        <li>• Drag clips between tracks</li>
+                        <li>• Professional video composition</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <ContinuousTimeline
+                clips={timelineClips}
+                mediaFiles={files}
+                selectedClipId={selectedClipId}
+                currentTime={currentTime}
+                totalDuration={totalDuration}
+                globalTrimStart={globalTrimStart}
+                globalTrimEnd={globalTrimEnd}
+                pixelsPerSecond={zoomLevel}
+                onClipSelect={selectClip}
+                onClipMove={(clipId, newTrackId, newStartTime) => moveClip(clipId, newTrackId, newStartTime)}
+                onClipRemove={removeClipFromTimeline}
+                onSeek={handleContinuousTimelineSeek}
+                onGlobalTrimStartChange={setGlobalTrimStart}
+                onGlobalTrimEndChange={setGlobalTrimEnd}
+                onZoomChange={setZoomLevel}
+                multiTrackMode={multiTrackMode}
+              />
+            </div>
           )}
 
           {/* Timeline Tools */}
@@ -577,6 +674,14 @@ const Editor: React.FC = () => {
               onDelete={handleDeleteClip}
               canSplit={!!selectedClipId}
               canDelete={!!selectedClipId}
+            />
+          )}
+
+          {/* Overlay Controls */}
+          {multiTrackMode && timelineClips.length > 0 && (
+            <OverlayControls
+              clip={timelineClips.find(clip => clip.id === selectedClipId) || null}
+              onUpdateClip={updateClip}
             />
           )}
 

@@ -9,6 +9,9 @@ interface MediaListItemProps {
   onEdit?: (file: MediaFile) => void
   onPreview?: (file: MediaFile) => void
   onDelete?: (id: string) => void
+  // Multi-track support
+  multiTrackMode?: boolean
+  onAddToTrack?: (file: MediaFile, trackId: number) => void
 }
 
 const MediaListItem: React.FC<MediaListItemProps> = ({
@@ -17,7 +20,9 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   onSelect,
   onEdit,
   onPreview,
-  onDelete
+  onDelete,
+  multiTrackMode = false,
+  onAddToTrack
 }) => {
   const handleSelect = () => {
     onSelect(file.id)
@@ -31,6 +36,10 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   const handlePreview = (e: React.MouseEvent) => {
     e.stopPropagation()
     onPreview?.(file)
+  }
+
+  const handleAddToTrack = (trackId: number) => {
+    onAddToTrack?.(file, trackId)
   }
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -167,28 +176,84 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
       {/* Expanded Actions when Selected */}
       {isSelected && (
         <div className="relative z-10 mt-6 pt-6 border-t border-gray-700/50">
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={handleEdit}
-              className="group/action relative overflow-hidden bg-gradient-to-r from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border border-blue-400/30 hover:border-blue-400/60 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <span>✂️</span>
-                <span>Edit</span>
-              </span>
-            </button>
-            <button 
-              onClick={handlePreview}
-              className="group/action relative overflow-hidden bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-400/30 hover:border-purple-400/60 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-purple-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <span>👁️</span>
-                <span>Preview</span>
-              </span>
-            </button>
-          </div>
+          {multiTrackMode ? (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Add to Track:</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => handleAddToTrack(0)}
+                    className="group/action relative overflow-hidden bg-gradient-to-r from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border border-blue-400/30 hover:border-blue-400/60 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 hover:scale-105"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                    <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+                      <span>📹</span>
+                      <span>Track 0</span>
+                    </span>
+                  </button>
+                  <button 
+                    onClick={() => handleAddToTrack(1)}
+                    className="group/action relative overflow-hidden bg-gradient-to-r from-red-500/20 to-red-600/20 hover:from-red-500/30 hover:to-red-600/30 border border-red-400/30 hover:border-red-400/60 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 hover:scale-105"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-red-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                    <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+                      <span>🎥</span>
+                      <span>Track 1</span>
+                    </span>
+                  </button>
+                </div>
+                <div className="mt-3 text-xs text-gray-400">
+                  Track 0: Main video • Track 1: Overlay
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={handleEdit}
+                  className="group/action relative overflow-hidden bg-gradient-to-r from-green-500/20 to-green-600/20 hover:from-green-500/30 hover:to-green-600/30 border border-green-400/30 hover:border-green-400/60 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 hover:scale-105"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-green-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+                    <span>✂️</span>
+                    <span>Edit</span>
+                  </span>
+                </button>
+                <button 
+                  onClick={handlePreview}
+                  className="group/action relative overflow-hidden bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-400/30 hover:border-purple-400/60 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 hover:scale-105"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-purple-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+                    <span>👁️</span>
+                    <span>Preview</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={handleEdit}
+                className="group/action relative overflow-hidden bg-gradient-to-r from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border border-blue-400/30 hover:border-blue-400/60 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span>✂️</span>
+                  <span>Edit</span>
+                </span>
+              </button>
+              <button 
+                onClick={handlePreview}
+                className="group/action relative overflow-hidden bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-400/30 hover:border-purple-400/60 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-purple-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span>👁️</span>
+                  <span>Preview</span>
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

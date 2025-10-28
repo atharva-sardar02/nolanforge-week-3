@@ -12,9 +12,12 @@ const Recorder: React.FC = () => {
   const [recordingMode, setRecordingMode] = useState<'idle' | 'webcam' | 'screen' | 'combined'>('idle')
   const [recordedFiles, setRecordedFiles] = useState<Array<{ blob: Blob; fileName: string }>>([])
   const [currentStream, setCurrentStream] = useState<MediaStream | null>(null)
+  const [multiTrackMode, setMultiTrackMode] = useState(false)
+  const [selectedTrackId, setSelectedTrackId] = useState(0)
   
   const { addFile } = useMediaStore()
   const { settings, resetRecording, duration } = useRecordingState()
+  const { addClipToTimeline, getTotalDuration } = useEditState()
   
   // Handle recording start
   const handleRecordingStart = () => {
@@ -126,7 +129,7 @@ const Recorder: React.FC = () => {
       
       // Add to edit state timeline
       const { addClipToTimeline, getTotalDuration } = useEditState.getState()
-      addClipToTimeline(mediaFile, 0, getTotalDuration())
+      addClipToTimeline(mediaFile, selectedTrackId, getTotalDuration())
       
       console.log('✅ Recording added to timeline:', mediaFile.name)
       alert(`✅ Recording added to timeline!\nFile saved to: ${filePath}`)
@@ -369,6 +372,9 @@ const Recorder: React.FC = () => {
                   onRecordingError={handleRecordingError}
                   onSaveToDisk={handleSaveToDisk}
                   onAddToTimeline={handleAddToTimeline}
+                  multiTrackMode={multiTrackMode}
+                  selectedTrackId={selectedTrackId}
+                  onTrackSelect={setSelectedTrackId}
                 />
               </div>
               
@@ -416,6 +422,49 @@ const Recorder: React.FC = () => {
                       {settings.audioEnabled ? 'On' : 'Off'}
                     </span>
                   </div>
+                  
+                  {/* Multi-Track Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🎵</span>
+                      <span className="text-gray-300">Multi-Track Mode</span>
+                    </div>
+                    <button
+                      onClick={() => setMultiTrackMode(!multiTrackMode)}
+                      className={`
+                        relative w-16 h-8 rounded-full transition-all duration-300
+                        ${multiTrackMode 
+                          ? 'bg-blue-600 shadow-lg shadow-blue-500/25' 
+                          : 'bg-gray-600 hover:bg-gray-500'
+                        }
+                      `}
+                      title={multiTrackMode ? 'Disable Multi-Track' : 'Enable Multi-Track'}
+                    >
+                      <div 
+                        className={`
+                          absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300
+                          ${multiTrackMode ? 'translate-x-9' : 'translate-x-1'}
+                        `}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                        {multiTrackMode ? '🎵' : '📊'}
+                      </div>
+                    </button>
+                  </div>
+                  
+                  {/* Track Selection Info */}
+                  {multiTrackMode && (
+                    <div className="p-4 bg-blue-600/20 rounded-xl border border-blue-500/30">
+                      <div className="text-sm text-blue-200">
+                        <div className="font-medium mb-2">🎬 Multi-Track Recording:</div>
+                        <div className="space-y-1 text-xs">
+                          <div>• Track 0: Main video (background)</div>
+                          <div>• Track 1: Overlay video (webcam, graphics)</div>
+                          <div>• Select track before recording</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

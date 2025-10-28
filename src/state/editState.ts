@@ -10,6 +10,13 @@ export interface TimelineClip {
   trimStart: number // Trim start for this clip (within source)
   trimEnd: number // Trim end for this clip (within source)
   sourceDuration: number // Original source file duration
+  
+  // Overlay properties (for Track 1+)
+  overlayPosition?: { x: number; y: number }
+  overlaySize?: { width: number; height: number }
+  overlayOpacity?: number
+  overlayBlendMode?: 'normal' | 'multiply' | 'screen' | 'overlay'
+  overlayVisible?: boolean
 }
 
 export interface EditState {
@@ -46,6 +53,7 @@ export interface EditState {
   selectClip: (clipId: string | null) => void
   updateClipTrim: (clipId: string, trimStart: number, trimEnd: number) => void
   updateClipDuration: (clipId: string, duration: number) => void
+  updateClip: (clipId: string, updates: Partial<TimelineClip>) => void
   splitClipAtPlayhead: () => void
   clearTimeline: () => void
   
@@ -160,6 +168,17 @@ export const useEditState = create<EditState>((set, get) => ({
       if (clip.id === clipId) {
         const newDuration = trimEnd - trimStart
         return { ...clip, trimStart, trimEnd, duration: newDuration }
+      }
+      return clip
+    })
+    set({ timelineClips: updatedClips })
+  },
+
+  updateClip: (clipId: string, updates: Partial<TimelineClip>) => {
+    const state = get()
+    const updatedClips = state.timelineClips.map(clip => {
+      if (clip.id === clipId) {
+        return { ...clip, ...updates }
       }
       return clip
     })
