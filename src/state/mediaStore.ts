@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { removeThumbnailFromCache } from '../utils/thumbnailUtils'
 
 export interface MediaFile {
   id: string
@@ -51,17 +52,34 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
   },
 
   removeFile: (id: string) => {
-    set((state) => ({
-      files: state.files.filter(file => file.id !== id),
-      selectedFileId: state.selectedFileId === id ? null : state.selectedFileId
-    }))
+    set((state) => {
+      const fileToRemove = state.files.find(file => file.id === id)
+      if (fileToRemove) {
+        // Clean up thumbnail cache
+        removeThumbnailFromCache(fileToRemove.path)
+      }
+      
+      return {
+        files: state.files.filter(file => file.id !== id),
+        selectedFileId: state.selectedFileId === id ? null : state.selectedFileId
+      }
+    })
   },
 
   removeFiles: (ids: string[]) => {
-    set((state) => ({
-      files: state.files.filter(file => !ids.includes(file.id)),
-      selectedFileId: ids.includes(state.selectedFileId || '') ? null : state.selectedFileId
-    }))
+    set((state) => {
+      const filesToRemove = state.files.filter(file => ids.includes(file.id))
+      
+      // Clean up thumbnail cache for all removed files
+      filesToRemove.forEach(file => {
+        removeThumbnailFromCache(file.path)
+      })
+      
+      return {
+        files: state.files.filter(file => !ids.includes(file.id)),
+        selectedFileId: ids.includes(state.selectedFileId || '') ? null : state.selectedFileId
+      }
+    })
   },
 
   selectFile: (id: string) => {

@@ -1,9 +1,11 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react'
 import { formatDuration } from '../utils/fileUtils'
 import { TimelineClip } from '../state/editState'
+import { MediaFile } from '../state/mediaStore'
 
 interface TimelineProps {
   clips: TimelineClip[]
+  mediaFiles: MediaFile[]
   selectedClipId: string | null
   currentTime: number
   totalDuration: number
@@ -22,6 +24,7 @@ interface TimelineProps {
 
 const ContinuousTimeline: React.FC<TimelineProps> = ({
   clips,
+  mediaFiles,
   selectedClipId,
   currentTime,
   totalDuration,
@@ -51,6 +54,11 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
 
   const timeToPixels = (time: number) => time * pixelsPerSecondValue
   const pixelsToTime = (pixels: number) => pixels / pixelsPerSecondValue
+
+  // Helper function to get media file for a clip
+  const getMediaFileForClip = (clip: TimelineClip): MediaFile | null => {
+    return mediaFiles.find(file => file.id === clip.mediaFileId) || null
+  }
 
   // Auto-scroll to keep playhead visible
   useEffect(() => {
@@ -294,12 +302,14 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
                 const isSelected = clip.id === selectedClipId
                 const x = timeToPixels(clip.startTime)
                 const width = timeToPixels(clip.duration)
+                const mediaFile = getMediaFileForClip(clip)
+                const thumbnail = mediaFile?.thumbnail
                 
                 return (
                   <div
                     key={clip.id}
                     className={`
-                      absolute top-2 rounded-lg cursor-move select-none overflow-visible group
+                      absolute top-2 rounded-lg cursor-move select-none overflow-hidden group
                       transition-shadow duration-150
                       ${isSelected 
                         ? 'ring-4 ring-blue-400 shadow-glow z-20' 
@@ -310,9 +320,11 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
                       left: `${x}px`,
                       width: `${width}px`,
                       height: 'calc(100% - 16px)',
-                      background: isSelected 
-                        ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
-                        : 'linear-gradient(135deg, #4b5563 0%, #374151 100%)'
+                      background: thumbnail 
+                        ? `url(${thumbnail}) center/cover`
+                        : isSelected 
+                          ? 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+                          : 'linear-gradient(135deg, #4b5563 0%, #374151 100%)'
                     }}
                     onMouseDown={(e) => handleClipMouseDown(e, clip)}
                     onClick={(e) => {
@@ -364,10 +376,15 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
                     
                     {/* Clip content */}
                     <div className="absolute inset-0 flex flex-col justify-center px-3">
-                      <div className="text-white text-sm font-bold truncate drop-shadow-lg">
+                      {/* Semi-transparent overlay for text readability */}
+                      {thumbnail && (
+                        <div className="absolute inset-0 bg-black/40 rounded-lg" />
+                      )}
+                      
+                      <div className="relative z-10 text-white text-sm font-bold truncate drop-shadow-lg">
                         Clip #{clips.filter(c => c.trackId === 0).indexOf(clip) + 1}
                       </div>
-                      <div className="text-white/90 text-xs font-mono mt-1 drop-shadow">
+                      <div className="relative z-10 text-white/90 text-xs font-mono mt-1 drop-shadow">
                         {formatDuration(clip.duration)}
                       </div>
                     </div>

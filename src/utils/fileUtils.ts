@@ -1,4 +1,5 @@
 import { MediaFile } from '../state/mediaStore'
+import { generateVideoThumbnail } from './thumbnailUtils'
 
 // Store the actual File objects to maintain reference
 const fileObjectCache = new Map<string, File>()
@@ -77,7 +78,7 @@ export const createMediaFile = (file: File): Promise<MediaFile> => {
         }
       }, 10000) // 10 second timeout
       
-      video.onloadedmetadata = () => {
+      video.onloadedmetadata = async () => {
         if (!resolved) {
           resolved = true
           clearTimeout(timeout)
@@ -88,6 +89,22 @@ export const createMediaFile = (file: File): Promise<MediaFile> => {
             width: video.videoWidth,
             height: video.videoHeight
           })
+          
+          // Generate thumbnail after metadata is loaded
+          try {
+            console.log('🎬 Generating thumbnail for:', file.name)
+            const thumbnail = await generateVideoThumbnail(blobUrl, {
+              width: 320,
+              height: 180,
+              quality: 0.8
+            })
+            mediaFile.thumbnail = thumbnail
+            console.log('✅ Thumbnail generated for:', file.name)
+          } catch (error) {
+            console.warn('⚠️ Failed to generate thumbnail for:', file.name, error)
+            // Continue without thumbnail - not a critical error
+          }
+          
           video.remove()
           resolve(mediaFile)
         }

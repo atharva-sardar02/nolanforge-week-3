@@ -9,7 +9,7 @@ import { useEditState } from '../state/editState'
 import { useExport } from '../hooks/useExport'
 
 const Editor: React.FC = () => {
-  const { getFileById } = useMediaStore()
+  const { getFileById, files } = useMediaStore()
   const { 
     timelineClips,
     selectedClipId,
@@ -553,6 +553,7 @@ const Editor: React.FC = () => {
           {timelineClips.length > 0 && (
             <ContinuousTimeline
               clips={timelineClips}
+              mediaFiles={files}
               selectedClipId={selectedClipId}
               currentTime={currentTime}
               totalDuration={totalDuration}

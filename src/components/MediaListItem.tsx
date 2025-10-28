@@ -64,15 +64,41 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
       `} />
 
       <div className="relative z-10 flex items-start space-x-4">
-        {/* Icon with Glow */}
+        {/* Thumbnail or Icon */}
         <div className={`
-          flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center text-4xl transition-all duration-300
+          flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden transition-all duration-300
           ${isSelected 
-            ? 'bg-gradient-to-br from-blue-500/30 to-purple-500/30 shadow-glow' 
-            : 'bg-gradient-to-br from-gray-700/30 to-gray-800/30 group-hover:scale-110'
+            ? 'shadow-glow ring-2 ring-blue-400' 
+            : 'group-hover:scale-110'
           }
         `}>
-          {file.type === 'video' ? '🎬' : '🎵'}
+          {file.type === 'video' && file.thumbnail ? (
+            <img 
+              src={file.thumbnail} 
+              alt={file.name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={(e) => {
+                // Fallback to icon if thumbnail fails to load
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+                const parent = target.parentElement
+                if (parent) {
+                  parent.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-gray-700/30 to-gray-800/30 flex items-center justify-center text-2xl">🎬</div>'
+                }
+              }}
+            />
+          ) : (
+            <div className={`
+              w-full h-full flex items-center justify-center text-2xl transition-all duration-300
+              ${file.type === 'video' 
+                ? 'bg-gradient-to-br from-gray-700/30 to-gray-800/30' 
+                : 'bg-gradient-to-br from-purple-700/30 to-pink-700/30'
+              }
+            `}>
+              {file.type === 'video' ? '🎬' : '🎵'}
+            </div>
+          )}
         </div>
         
         {/* File Info */}
