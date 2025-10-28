@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::fs;
-use std::fs::File;
-use std::io::Write;
 use crate::config::Config;
 use crate::services::openai::{transcribe_audio, TranscriptionResponse};
 
@@ -754,10 +752,76 @@ fn format_time_vtt(seconds: f64) -> String {
 }
 
 #[tauri::command]
+pub async fn store_api_key(api_key: String) -> Result<String, String> {
+    use std::fs;
+    
+    // Create app data directory
+    let app_data_dir = dirs::data_dir()
+        .ok_or("Failed to get app data directory")?
+        .join("NolanForge");
+    
+    fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("Failed to create app data directory: {}", e))?;
+    
+    // Store API key in a secure file
+    let api_key_file = app_data_dir.join("openai_api_key.txt");
+    fs::write(&api_key_file, api_key)
+        .map_err(|e| format!("Failed to write API key file: {}", e))?;
+    
+    Ok("API key stored successfully".to_string())
+}
+
+#[tauri::command]
+pub async fn get_stored_api_key() -> Result<String, String> {
+    use std::fs;
+    
+    let app_data_dir = dirs::data_dir()
+        .ok_or("Failed to get app data directory")?
+        .join("NolanForge");
+    
+    let api_key_file = app_data_dir.join("openai_api_key.txt");
+    
+    if !api_key_file.exists() {
+        return Err("No stored API key found".to_string());
+    }
+    
+    let api_key = fs::read_to_string(&api_key_file)
+        .map_err(|e| format!("Failed to read API key file: {}", e))?;
+    
+    Ok(api_key.trim().to_string())
+}
+
+#[tauri::command]
+pub async fn test_api_key(api_key: String) -> Result<String, String> {
+    use reqwest::Client;
+    
+    let client = Client::new();
+    
+    // Test the API key with a simple request
+    let response = client
+        .get("https://api.openai.com/v1/models")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .send()
+        .await
+        .map_err(|e| format!("API request failed: {}", e))?;
+    
+    if !response.status().is_success() {
+        let status = response.status();
+        let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+        return Err(format!("OpenAI API error ({}): {}", status, error_text));
+    }
+    
+    Ok("API key is valid and working".to_string())
+}
+
+#[tauri::command]
 pub async fn save_recording_to_file(
     file_path: String,
     data: Vec<u8>,
 ) -> Result<String, String> {
+    use std::fs::File;
+    use std::io::Write;
+    
     match File::create(&file_path) {
         Ok(mut file) => {
             match file.write_all(&data) {

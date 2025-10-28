@@ -22,7 +22,10 @@ pub fn run() {
             commands::check_ffmpeg,
             commands::save_recording_to_file,
             commands::transcribe_video,
-            commands::export_transcript
+            commands::export_transcript,
+            commands::store_api_key,
+            commands::get_stored_api_key,
+            commands::test_api_key
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

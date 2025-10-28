@@ -7,6 +7,7 @@ import TrimControls from '../components/TrimControls'
 import TimelineTools from '../components/TimelineTools'
 import OverlayControls from '../components/OverlayControls'
 import { TranscriptionPanel } from '../components/TranscriptionPanel'
+import { SettingsPanel } from '../components/SettingsPanel'
 import { useMediaStore } from '../state/mediaStore'
 import { useEditState } from '../state/editState'
 import { useExport } from '../hooks/useExport'
@@ -40,6 +41,7 @@ const Editor: React.FC = () => {
   const [localTime, setLocalTime] = useState(0)
   const [multiTrackMode, setMultiTrackMode] = useState(false)
   const [showTranscriptionPanel, setShowTranscriptionPanel] = useState(false)
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false)
 
   // Keyboard shortcuts for zoom
   useEffect(() => {
@@ -487,6 +489,14 @@ const Editor: React.FC = () => {
             >
               🎤 Transcribe
             </button>
+
+            {/* Settings Button */}
+            <button
+              onClick={() => setShowSettingsPanel(true)}
+              className="px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-lg bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white shadow-glow hover:scale-105"
+            >
+              ⚙️ Settings
+            </button>
                   </div>
                 </div>
               </div>
@@ -929,6 +939,11 @@ const Editor: React.FC = () => {
       {/* Transcription Panel */}
       {showTranscriptionPanel && (
         <TranscriptionPanel onClose={() => setShowTranscriptionPanel(false)} />
+      )}
+
+      {/* Settings Panel */}
+      {showSettingsPanel && (
+        <SettingsPanel onClose={() => setShowSettingsPanel(false)} />
       )}
     </div>
   )
