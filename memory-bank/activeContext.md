@@ -48,6 +48,7 @@
   - **NEW FEATURES**: Click-to-seek functionality on timeline
   - **NEW FEATURES**: Green left trim handle (changed from blue)
   - **FIXED**: Recording duration issue - full recordings now sent to timeline
+  - **FIXED**: Media Library blank screen issue after recording and adding to timeline
   - **VERIFIED**: All timeline editing features working perfectly
 
 ## Active Decisions
@@ -85,6 +86,7 @@
 - **Timeline Operations**: ✅ Comprehensive utility functions for timeline ops
 - **Click-to-Seek**: ✅ Timeline interaction with playhead movement
 - **Recording Duration**: ✅ Full recording duration preserved in timeline
+- **Media Library Fix**: ✅ Fixed blank screen issue after recording and adding to timeline
 
 ### Export Implementation Details (Working)
 - **Export Method**: FFmpeg stream copy (-c copy) for fast trimming + concatenation ✅
@@ -138,4 +140,5 @@
 - ✅ **Timeline State**: Separate state management with validation and operations
 - ✅ **Click-to-Seek**: Timeline interaction with playhead movement
 - ✅ **Recording Duration**: Full recording duration preserved in timeline
+- ✅ **Media Library Fix**: Fixed blank screen issue after recording and adding to timeline
 - 🎯 **Ready for**: Advanced features, polish, or comprehensive submission preparation

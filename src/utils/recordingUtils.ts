@@ -44,17 +44,11 @@ export const createMediaFileFromRecording = (
     path: blobUrl, // Use blob URL for video player
     originalPath: blobUrl, // For recordings, blob URL is the original path
     size: blob.size,
-    type: blob.type,
+    type: 'video' as const, // Ensure it matches MediaFile interface
     duration: metadata.duration,
-    width: metadata.resolution.width,
-    height: metadata.resolution.height,
     format: metadata.format,
-    createdAt: new Date(metadata.timestamp).toISOString(),
-    isRecording: true,
-    metadata: {
-      ...metadata,
-      source: 'recording'
-    }
+    createdAt: new Date(metadata.timestamp), // Convert to Date object
+    lastModified: new Date(metadata.timestamp) // Add missing lastModified property
   }
 }
 

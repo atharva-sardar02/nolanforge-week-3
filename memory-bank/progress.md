@@ -317,6 +317,7 @@ ffmpeg -ss <start> -i <input> -t <duration> -c copy -y <output>
 - ✅ **MAJOR**: Added zoom functionality and click-to-seek to timeline
 - ✅ **MAJOR**: Fixed recording duration issue - full recordings now sent to timeline
 - ✅ **MAJOR**: Changed left trim handle color to green for better UX
+- ✅ **MAJOR**: Fixed Media Library blank screen issue after recording and adding to timeline
 
 ## Project Statistics
 - **Lines of Code**: ~9000+ (Frontend + Backend)
