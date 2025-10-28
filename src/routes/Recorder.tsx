@@ -25,34 +25,12 @@ const Recorder: React.FC = () => {
   const handleRecordingStop = async (blob: Blob) => {
     console.log('🛑 Recording stopped, blob size:', formatFileSize(blob.size))
     
-    try {
-      // Create metadata for the recording
-      const metadata = {
-        duration: duration, // Use the actual recording duration
-        resolution: settings.resolution,
-        frameRate: settings.frameRate,
-        quality: settings.quality,
-        format: settings.format,
-        audioEnabled: settings.audioEnabled,
-        timestamp: Date.now()
-      }
-      
-      // Create MediaFile and add to store
-      const mediaFile = createMediaFileFromRecording(blob, metadata)
-      addFile(mediaFile)
-      
-      // Store for download option
-      const fileName = generateRecordingFileName(settings.format)
-      setRecordedFiles(prev => [...prev, { blob, fileName }])
-      
-      console.log('✅ Recording added to media library:', mediaFile.name)
-      
-      // Don't reset recording state immediately - let user see the buttons
-      // resetRecording() will be called when user clicks "Reset Recording"
-      
-    } catch (error) {
-      console.error('❌ Failed to process recording:', error)
-    }
+    // Just store the blob for the buttons to use
+    // Don't automatically add to media library - let buttons handle their own actions
+    const fileName = generateRecordingFileName(settings.format)
+    setRecordedFiles(prev => [...prev, { blob, fileName }])
+    
+    console.log('✅ Recording ready for user action')
   }
   
   // Handle recording error

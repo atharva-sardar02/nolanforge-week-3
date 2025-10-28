@@ -7,67 +7,67 @@
     "react": {
       "src": "../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "9471d972",
+      "fileHash": "adcac6ca",
       "needsInterop": true
     },
     "react-dom": {
       "src": "../../node_modules/react-dom/index.js",
       "file": "react-dom.js",
-      "fileHash": "781418d9",
+      "fileHash": "11a5a7ef",
       "needsInterop": true
     },
     "react/jsx-dev-runtime": {
       "src": "../../node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
-      "fileHash": "ee9aada8",
+      "fileHash": "ffb067ef",
       "needsInterop": true
     },
     "react/jsx-runtime": {
       "src": "../../node_modules/react/jsx-runtime.js",
       "file": "react_jsx-runtime.js",
-      "fileHash": "3b395aff",
+      "fileHash": "35c2c6fb",
       "needsInterop": true
     },
     "@tauri-apps/api/core": {
       "src": "../../node_modules/@tauri-apps/api/core.js",
       "file": "@tauri-apps_api_core.js",
-      "fileHash": "5aa7882f",
+      "fileHash": "25ae9a3e",
       "needsInterop": false
     },
     "@tauri-apps/api/path": {
       "src": "../../node_modules/@tauri-apps/api/path.js",
       "file": "@tauri-apps_api_path.js",
-      "fileHash": "10e1f024",
+      "fileHash": "1f1cad38",
       "needsInterop": false
     },
     "@tauri-apps/plugin-dialog": {
       "src": "../../node_modules/@tauri-apps/plugin-dialog/dist-js/index.js",
       "file": "@tauri-apps_plugin-dialog.js",
-      "fileHash": "9c482e70",
+      "fileHash": "e6aba3c0",
       "needsInterop": false
     },
     "@tauri-apps/plugin-fs": {
       "src": "../../node_modules/@tauri-apps/plugin-fs/dist-js/index.js",
       "file": "@tauri-apps_plugin-fs.js",
-      "fileHash": "6e8c7888",
+      "fileHash": "2641bd43",
       "needsInterop": false
     },
     "react-dom/client": {
       "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "922757b7",
+      "fileHash": "2428030c",
       "needsInterop": true
     },
     "react-router-dom": {
       "src": "../../node_modules/react-router-dom/dist/index.mjs",
       "file": "react-router-dom.js",
-      "fileHash": "90790d79",
+      "fileHash": "a87e71e7",
       "needsInterop": false
     },
     "zustand": {
       "src": "../../node_modules/zustand/esm/index.mjs",
       "file": "zustand.js",
-      "fileHash": "68f478de",
+      "fileHash": "5cad798b",
       "needsInterop": false
     }
   },
@@ -75,14 +75,14 @@
     "chunk-O5SGRLNI": {
       "file": "chunk-O5SGRLNI.js"
     },
-    "chunk-HMSUZUCG": {
-      "file": "chunk-HMSUZUCG.js"
-    },
     "chunk-FKRRNJA4": {
       "file": "chunk-FKRRNJA4.js"
     },
     "chunk-UNLUE3XC": {
       "file": "chunk-UNLUE3XC.js"
+    },
+    "chunk-HMSUZUCG": {
+      "file": "chunk-HMSUZUCG.js"
     },
     "chunk-5WRI5ZAA": {
       "file": "chunk-5WRI5ZAA.js"
