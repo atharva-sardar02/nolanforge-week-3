@@ -7,10 +7,10 @@
 Tauri Shell (Rust Backend)
 ├── Uploader Module (React) - ✅ COMPLETE
 ├── Editor Module (React) - ✅ COMPLETE
-└── Recorder Module (React) - Ready for PR7
+└── Recorder Module (React) - ✅ COMPLETE
 ```
 
-### Current Architecture ✅ MVP COMPLETE + MULTI-CLIP TIMELINE
+### Current Architecture ✅ MVP COMPLETE + MULTI-CLIP TIMELINE + RECORDER MODULE
 ```
 React Frontend (TypeScript + Vite)
 ├── App.tsx - Main app with routing
@@ -18,7 +18,7 @@ React Frontend (TypeScript + Vite)
 ├── Routes/
 │   ├── Uploader.tsx - File import + Media Library ✅
 │   ├── Editor.tsx - Multi-clip video player + Dual timeline + Export ✅
-│   └── Recorder.tsx - Screen recording (pending)
+│   └── Recorder.tsx - Complete recording module with three modes ✅
 ├── Components/
 │   ├── FileDropZone.tsx - Drag-and-drop import ✅
 │   ├── MediaLibrary.tsx - Grid/List view with edit action ✅
@@ -27,42 +27,52 @@ React Frontend (TypeScript + Vite)
 │   ├── Timeline.tsx - Single-clip timeline with trim markers ✅
 │   ├── ContinuousTimeline.tsx - Multi-clip timeline with global trim ✅
 │   ├── TrimControls.tsx - In/Out point controls ✅
-│   └── ExportPanel.tsx - Export UI ✅
+│   ├── ExportPanel.tsx - Export UI ✅
+│   ├── PreviewWebcam.tsx - Webcam preview component ✅
+│   ├── ScreenCapture.tsx - Screen capture with user-triggered sharing ✅
+│   ├── CombinedCapture.tsx - Canvas-based video composition ✅
+│   └── RecorderControls.tsx - Recording controls with save/add options ✅
 ├── State/
 │   ├── appState.ts - Global UI state ✅
 │   ├── mediaStore.ts - Media files ✅
-│   └── editState.ts - Multi-clip timeline state ✅
+│   ├── editState.ts - Multi-clip timeline state ✅
+│   └── recordingState.ts - Recording state management ✅
 ├── Hooks/
-│   └── useExport.ts - Multi-clip export logic ✅
+│   ├── useExport.ts - Multi-clip export logic ✅
+│   └── useMediaRecorder.ts - MediaRecorder API integration ✅
 └── Utils/
     ├── fileUtils.ts - File operations + blob URLs ✅
-    └── time.ts - Time formatting ✅
+    ├── time.ts - Time formatting ✅
+    └── recordingUtils.ts - Recording file handling and blob management ✅
 ```
 
-### Data Flow ✅ IMPLEMENTED + MULTI-CLIP
+### Data Flow ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
 1. **Uploader** → Imports files → **MediaStore** (blob URLs + metadata)
 2. **MediaLibrary** → "Edit" button → **addClipToTimeline** → **editState.timelineClips**
 3. **Editor** → **ContinuousTimeline** (all clips) + **Timeline** (selected clip) → **ExportPanel**
 4. **Export** → **globalTrimStart/End** → **FFmpeg** (Rust) → Multi-clip composition
+5. **Recorder** → **MediaRecorder API** → **Canvas Composition** → **Save/Add to Timeline**
 
 ## Key Technical Decisions
 
-### State Management ✅ IMPLEMENTED + MULTI-CLIP
+### State Management ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
 - **appState**: Global UI (theme, route, sidebar) ✅
 - **mediaStore**: Imported media files with metadata ✅
 - **editState**: Multi-clip timeline state (TimelineClip[], globalTrimStart/End, selectedClipId) ✅
+- **recordingState**: Recording state (status, settings, blob, error) ✅
 - **Persistence**: Files cached in memory via Map, timeline state in memory
 
-### FFmpeg Integration ✅ IMPLEMENTED + MULTI-CLIP
-- **Rust Commands**: `export_trimmed_video()`, `export_multi_clip_video()`, `check_ffmpeg()`
+### FFmpeg Integration ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
+- **Rust Commands**: `export_trimmed_video()`, `export_multi_clip_video()`, `check_ffmpeg()`, `save_recording_to_file()`
 - **Tauri Plugins**: dialog (file pickers), fs (file system)
 - **Export Method**: Stream copy (-c copy) for fast trimming + concatenation
 - **Error Handling**: FFmpeg availability check + error propagation
 
-### File Handling ✅ IMPLEMENTED
+### File Handling ✅ IMPLEMENTED + RECORDER
 - **Import**: HTML5 File API with drag-and-drop
 - **Preview**: Blob URLs (URL.createObjectURL) for video playback
 - **Export**: File path selection via Tauri dialog
+- **Recording**: Native file dialogs + Downloads folder integration
 - **Metadata**: Video duration extracted via hidden video element
 - **Caching**: File objects stored in Map by ID
 
@@ -73,13 +83,21 @@ React Frontend (TypeScript + Vite)
 - **Events**: onloadedmetadata, oncanplay, ontimeupdate, onended
 - **Multi-Clip**: Seamless transitions between clips with global timeline sync
 
+### Recording Patterns ✅ IMPLEMENTED
+- **MediaRecorder API**: Browser-native recording with canvas composition
+- **Canvas Composition**: Real-time video overlay for combined recording
+- **Stream Management**: Proper cleanup and error handling
+- **File Integration**: Native file dialogs and automatic timeline import
+- **Format Optimization**: MP4 recording for better browser compatibility
+- **Responsive UI**: Adaptive layout with controls positioned optimally
+
 ## Design Patterns
 
-### Component Architecture ✅ IMPLEMENTED + MULTI-CLIP
+### Component Architecture ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
 - **Route Components**: Uploader, Editor, Recorder (pages)
-- **Feature Components**: VideoPlayer, Timeline, ContinuousTimeline, TrimControls
-- **UI Components**: FileDropZone, MediaLibrary, MediaListItem, ExportPanel
-- **Custom Hooks**: useExport (multi-clip support)
+- **Feature Components**: VideoPlayer, Timeline, ContinuousTimeline, TrimControls, Recording components
+- **UI Components**: FileDropZone, MediaLibrary, MediaListItem, ExportPanel, RecorderControls
+- **Custom Hooks**: useExport (multi-clip support), useMediaRecorder (recording API)
 
 ### Keyboard Shortcuts ✅ IMPLEMENTED
 - **Playback**: Space/K (play/pause), ←/→ (frame step), J/L (seek)
@@ -95,7 +113,7 @@ React Frontend (TypeScript + Vite)
 
 ## Component Relationships
 
-### Core Components ✅ IMPLEMENTED + MULTI-CLIP
+### Core Components ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
 - **Navbar**: Top navigation with route links
 - **FileDropZone**: Drag-and-drop import with validation
 - **MediaLibrary**: Grid/List view with edit action + drag-and-drop to timeline
@@ -105,14 +123,19 @@ React Frontend (TypeScript + Vite)
 - **ContinuousTimeline**: Multi-clip timeline with global trim handles
 - **TrimControls**: In/Out point buttons + time displays
 - **ExportPanel**: Export configuration + status
+- **PreviewWebcam**: Webcam preview with live feed
+- **ScreenCapture**: Screen capture with user-triggered sharing
+- **CombinedCapture**: Canvas-based video composition with overlay
+- **RecorderControls**: Recording controls with save/add options
 
-### State Stores ✅ IMPLEMENTED + MULTI-CLIP
+### State Stores ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
 - **appState**: Current route, theme, UI state
 - **mediaStore**: Imported files, selection, file operations
 - **editState**: Multi-clip timeline (TimelineClip[], globalTrimStart/End, selectedClipId, playback state)
+- **recordingState**: Recording state (status, settings, blob, error, duration)
 
-### Rust Backend ✅ IMPLEMENTED + MULTI-CLIP
-- **commands.rs**: FFmpeg export commands (single + multi-clip)
+### Rust Backend ✅ IMPLEMENTED + MULTI-CLIP + RECORDER
+- **commands.rs**: FFmpeg export commands (single + multi-clip) + recording file save
 - **lib.rs**: Command registration + plugin initialization
 - **Cargo.toml**: Dependencies (dialog, fs plugins)
 - **capabilities/default.json**: Permissions for file access
@@ -126,6 +149,16 @@ React Frontend (TypeScript + Vite)
 6. FFmpeg concatenates trimmed clips into single output
 7. Success/error alert displayed
 8. Multi-clip composition saved to chosen location
+
+## Recording Workflow ✅ IMPLEMENTED
+1. User selects recording mode (Webcam, Screen, or Combined)
+2. System requests appropriate media permissions (getUserMedia/getDisplayMedia)
+3. Live preview displays the recording feed
+4. User clicks "Start Recording" to begin capture
+5. MediaRecorder API records the stream (with canvas composition for combined mode)
+6. User clicks "Stop Recording" to end capture
+7. User can "Save to Disk" (native file dialog) or "Add to Timeline" (automatic import)
+8. Recording automatically added to MediaLibrary and timeline for editing
 
 ## Technical Constraints & Solutions
 
@@ -144,11 +177,24 @@ React Frontend (TypeScript + Vite)
 - **Benefit**: Simplified configuration, better performance
 - **Migration**: Removed old @tailwind directives
 
-## Development Patterns ✅ PROVEN EFFECTIVE + MVP COMPLETE
+### Recording Format Compatibility
+- **Problem**: WebM recordings not compatible with video player
+- **Solution**: Switched to MP4 recording format with proper codec support
+- **Trade-off**: Slightly larger file sizes for better compatibility
+
+### Canvas Composition Performance
+- **Problem**: Real-time video composition can be CPU intensive
+- **Solution**: Optimized canvas rendering with proper frame rate control
+- **Trade-off**: Higher CPU usage for advanced combined recording features
+
+## Development Patterns ✅ PROVEN EFFECTIVE + MVP COMPLETE + RECORDER
 - **Focused PRs**: Each PR targets specific functionality ✅
 - **Iterative Development**: Build → Test → Polish cycle ✅
 - **User Feedback**: Quick iterations based on UI/UX issues ✅
 - **Modern Stack**: Latest Tauri, React, Tailwind versions ✅
-- **Progress Tracking**: 6/6 MVP PRs complete (100%) ✅
+- **Progress Tracking**: 7/7 MVP PRs complete (100%) ✅
 - **Multi-Clip Timeline**: Advanced timeline with global trim handles ✅
 - **MVP Packaging**: Desktop app built and packaged for distribution ✅
+- **Recording Module**: Complete webcam, screen, and combined recording ✅
+- **Canvas Composition**: Advanced video overlay system ✅
+- **File Integration**: Native file dialogs and automatic timeline import ✅

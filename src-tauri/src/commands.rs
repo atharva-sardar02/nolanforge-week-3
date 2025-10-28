@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use std::fs;
-use std::path::Path;
+use std::fs::File;
+use std::io::Write;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExportOptions {
@@ -170,6 +171,22 @@ pub async fn export_multi_clip_video(clips: Vec<ClipData>, output_path: String) 
             "Failed to execute FFmpeg concatenation. Error: {}",
             e
         )),
+    }
+}
+
+#[tauri::command]
+pub async fn save_recording_to_file(
+    file_path: String,
+    data: Vec<u8>,
+) -> Result<String, String> {
+    match File::create(&file_path) {
+        Ok(mut file) => {
+            match file.write_all(&data) {
+                Ok(_) => Ok(format!("Recording saved successfully to: {}", file_path)),
+                Err(e) => Err(format!("Failed to write file: {}", e))
+            }
+        }
+        Err(e) => Err(format!("Failed to create file: {}", e))
     }
 }
 

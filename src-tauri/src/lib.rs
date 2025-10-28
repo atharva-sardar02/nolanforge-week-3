@@ -16,7 +16,8 @@ pub fn run() {
             greet,
             commands::export_trimmed_video,
             commands::export_multi_clip_video,
-            commands::check_ffmpeg
+            commands::check_ffmpeg,
+            commands::save_recording_to_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
