@@ -10,7 +10,7 @@ type ViewMode = 'grid' | 'list'
 const MediaLibrary: React.FC = () => {
   const navigate = useNavigate()
   const { files, selectedFileId, selectFile, removeFile, isLoading, error } = useMediaStore()
-  const { setCurrentFile } = useEditState()
+  const { addClipToTimeline, getTotalDuration } = useEditState()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [fileToDelete, setFileToDelete] = useState<string | null>(null)
@@ -31,9 +31,11 @@ const MediaLibrary: React.FC = () => {
   }, [showPreview])
 
   const handleEdit = (file: any) => {
-    // Select the file and navigate to editor
+    // Add file to timeline at the end and navigate to editor
     selectFile(file.id)
-    setCurrentFile(file)
+    // Add to main video track (track 0) at the end of current timeline
+    const endTime = getTotalDuration()
+    addClipToTimeline(file, 0, endTime)
     navigate('/editor')
   }
 

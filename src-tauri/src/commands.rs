@@ -1,10 +1,19 @@
 use serde::{Deserialize, Serialize};
 use std::process::Command;
+use std::fs;
+use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExportOptions {
     pub input_path: String,
     pub output_path: String,
+    pub trim_start: f64,
+    pub trim_end: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ClipData {
+    pub input_path: String,
     pub trim_start: f64,
     pub trim_end: f64,
 }
@@ -65,6 +74,102 @@ pub fn check_ffmpeg() -> Result<String, String> {
             }
         }
         Err(_) => Err("FFmpeg not found. Please install FFmpeg and add it to your PATH.".to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn export_multi_clip_video(clips: Vec<ClipData>, output_path: String) -> Result<String, String> {
+    // Validate inputs
+    if clips.is_empty() {
+        return Err("No clips provided".to_string());
+    }
+
+    // Create a temporary directory for intermediate files
+    let temp_dir = std::env::temp_dir().join("nolanforge_export");
+    fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create temp directory: {}", e))?;
+
+    // Step 1: Trim each clip individually
+    let mut trimmed_clips = Vec::new();
+    for (i, clip) in clips.iter().enumerate() {
+        let duration = clip.trim_end - clip.trim_start;
+        if duration <= 0.0 {
+            return Err(format!("Invalid trim range for clip {}", i));
+        }
+
+        let temp_output = temp_dir.join(format!("clip_{}.mp4", i));
+        
+        // Trim the clip
+        let output = Command::new("ffmpeg")
+            .arg("-ss")
+            .arg(clip.trim_start.to_string())
+            .arg("-i")
+            .arg(&clip.input_path)
+            .arg("-t")
+            .arg(duration.to_string())
+            .arg("-c")
+            .arg("copy")
+            .arg("-y")
+            .arg(&temp_output)
+            .output();
+
+        match output {
+            Ok(result) => {
+                if !result.status.success() {
+                    let error_msg = String::from_utf8_lossy(&result.stderr);
+                    return Err(format!("FFmpeg error trimming clip {}: {}", i, error_msg));
+                }
+            }
+            Err(e) => {
+                return Err(format!("Failed to execute FFmpeg for clip {}: {}", i, e));
+            }
+        }
+
+        trimmed_clips.push(temp_output);
+    }
+
+    // Step 2: Create concat file list
+    let concat_file = temp_dir.join("concat_list.txt");
+    let mut concat_content = String::new();
+    for clip_path in &trimmed_clips {
+        concat_content.push_str(&format!("file '{}'\n", clip_path.display()));
+    }
+    
+    fs::write(&concat_file, concat_content)
+        .map_err(|e| format!("Failed to write concat file: {}", e))?;
+
+    // Step 3: Concatenate all clips
+    let output = Command::new("ffmpeg")
+        .arg("-f")
+        .arg("concat")
+        .arg("-safe")
+        .arg("0")
+        .arg("-i")
+        .arg(&concat_file)
+        .arg("-c")
+        .arg("copy")
+        .arg("-y")
+        .arg(&output_path)
+        .output();
+
+    // Clean up temp files
+    let cleanup_result = fs::remove_dir_all(&temp_dir);
+    if let Err(e) = cleanup_result {
+        eprintln!("Warning: Failed to clean up temp directory: {}", e);
+    }
+
+    match output {
+        Ok(result) => {
+            if result.status.success() {
+                Ok(format!("Multi-clip video exported successfully to: {}", output_path))
+            } else {
+                let error_msg = String::from_utf8_lossy(&result.stderr);
+                Err(format!("FFmpeg concatenation error: {}", error_msg))
+            }
+        }
+        Err(e) => Err(format!(
+            "Failed to execute FFmpeg concatenation. Error: {}",
+            e
+        )),
     }
 }
 

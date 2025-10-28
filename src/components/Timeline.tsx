@@ -47,22 +47,23 @@ const Timeline: React.FC<TimelineProps> = ({
     const trimStartPosition = (trimStart / duration) * timelineWidth
     const trimEndPosition = (trimEnd / duration) * timelineWidth
     
-    const tolerance = 15 // pixels - larger for better touch/mouse interaction
+    const tolerance = 15 // pixels
     
-    if (Math.abs(x - playheadPosition) < tolerance) {
-      setDragType('playhead')
-    } else if (Math.abs(x - trimStartPosition) < tolerance) {
+    if (Math.abs(x - trimStartPosition) < tolerance) {
       setDragType('trimStart')
+      setIsDragging(true)
     } else if (Math.abs(x - trimEndPosition) < tolerance) {
       setDragType('trimEnd')
+      setIsDragging(true)
+    } else if (Math.abs(x - playheadPosition) < tolerance) {
+      setDragType('playhead')
+      setIsDragging(true)
     } else {
-      // Click on timeline - seek to that position
+      // Click anywhere on timeline - seek to that position (playhead can go anywhere)
       const time = getTimeFromPosition(e.clientX)
-      onSeek(time)
+      onSeek(Math.max(0, Math.min(time, duration)))
       return
     }
-    
-    setIsDragging(true)
   }, [currentTime, duration, trimStart, trimEnd, getTimeFromPosition, onSeek])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -72,16 +73,25 @@ const Timeline: React.FC<TimelineProps> = ({
     
     switch (dragType) {
       case 'playhead':
-        onSeek(time)
+        // Allow playhead to move freely across the timeline
+        onSeek(Math.max(0, Math.min(time, duration)))
         break
       case 'trimStart':
-        onTrimStartChange(Math.min(time, trimEnd))
+        // Trim start can go anywhere from 0 to duration, but should stay before trim end
+        const newTrimStart = Math.max(0, Math.min(time, duration))
+        if (newTrimStart < trimEnd) {
+          onTrimStartChange(newTrimStart)
+        }
         break
       case 'trimEnd':
-        onTrimEndChange(Math.max(time, trimStart))
+        // Trim end can go anywhere from 0 to duration, but should stay after trim start
+        const newTrimEnd = Math.max(0, Math.min(time, duration))
+        if (newTrimEnd > trimStart) {
+          onTrimEndChange(newTrimEnd)
+        }
         break
     }
-  }, [isDragging, dragType, getTimeFromPosition, onSeek, onTrimStartChange, onTrimEndChange, trimStart, trimEnd])
+  }, [isDragging, dragType, getTimeFromPosition, onSeek, onTrimStartChange, onTrimEndChange, trimStart, trimEnd, duration])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -93,10 +103,10 @@ const Timeline: React.FC<TimelineProps> = ({
     setDragType(null)
   }, [])
 
-  // Timeline markers for better navigation
+  // Timeline markers
   const getTimelineMarkers = () => {
     const markers = []
-    const interval = duration / 10 // 10 markers
+    const interval = duration / 10
     
     for (let i = 0; i <= 10; i++) {
       const time = i * interval
@@ -138,7 +148,7 @@ const Timeline: React.FC<TimelineProps> = ({
             {/* Timeline Markers */}
             {getTimelineMarkers()}
             
-            {/* Trim Range Background with Gradient */}
+            {/* Trim Range Background */}
             <div
               className="absolute top-0 h-full bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 border-l-4 border-r-4 border-blue-400 rounded-lg backdrop-blur-sm"
               style={{

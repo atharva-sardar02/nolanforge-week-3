@@ -15,6 +15,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             commands::export_trimmed_video,
+            commands::export_multi_clip_video,
             commands::check_ffmpeg
         ])
         .run(tauri::generate_context!())

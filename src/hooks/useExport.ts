@@ -1,12 +1,20 @@
 import { invoke } from '@tauri-apps/api/core'
 import { save, open } from '@tauri-apps/plugin-dialog'
 import { useState, useCallback } from 'react'
+import { MediaFile } from '../state/mediaStore'
 
 export interface ExportOptions {
   inputPath: string
   outputPath: string
   trimStart: number
   trimEnd: number
+}
+
+export interface ClipForExport {
+  inputPath: string
+  trimStart: number
+  trimEnd: number
+  mediaFile?: MediaFile
 }
 
 export interface ExportState {
@@ -136,9 +144,76 @@ export function useExport() {
     })
   }, [])
 
+  const exportMultiClipVideo = useCallback(async (clips: ClipForExport[]): Promise<boolean> => {
+    // Reset state
+    setState({
+      isExporting: true,
+      progress: 0,
+      error: null,
+      success: false,
+    })
+
+    try {
+      // Check if FFmpeg is available
+      const ffmpegAvailable = await checkFFmpeg()
+      if (!ffmpegAvailable) {
+        setState(prev => ({ ...prev, isExporting: false }))
+        return false
+      }
+
+      setState(prev => ({ ...prev, progress: 10 }))
+
+      // Ask where to save the output
+      const outputPath = await selectOutputPath('combined_output.mp4')
+      
+      if (!outputPath) {
+        setState(prev => ({ ...prev, isExporting: false }))
+        return false
+      }
+
+      setState(prev => ({ ...prev, progress: 20 }))
+
+      // Prepare clips data for Rust (convert to snake_case)
+      const clipsData = clips.map(clip => ({
+        input_path: clip.inputPath,
+        trim_start: clip.trimStart,
+        trim_end: clip.trimEnd,
+      }))
+
+      // Call Tauri command to export multiple clips
+      const result = await invoke<string>('export_multi_clip_video', { 
+        clips: clipsData,
+        outputPath: outputPath,
+      })
+      
+      setState({
+        isExporting: false,
+        progress: 100,
+        error: null,
+        success: true,
+      })
+
+      console.log('Multi-clip export successful:', result)
+      return true
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Multi-clip export failed:', errorMessage)
+      
+      setState({
+        isExporting: false,
+        progress: 0,
+        error: errorMessage,
+        success: false,
+      })
+      
+      return false
+    }
+  }, [checkFFmpeg, selectOutputPath])
+
   return {
     ...state,
     exportVideo,
+    exportMultiClipVideo,
     selectInputPath,
     selectOutputPath,
     checkFFmpeg,

@@ -38,8 +38,16 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
     onDelete?.(file.id)
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('mediaFileId', file.id)
+    e.dataTransfer.setData('application/json', JSON.stringify(file))
+  }
+
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
       className={`
         glass relative rounded-3xl border-2 p-6 cursor-pointer transition-all duration-300 group overflow-hidden
         ${isSelected 

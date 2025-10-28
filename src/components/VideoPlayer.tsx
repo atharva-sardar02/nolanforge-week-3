@@ -10,6 +10,7 @@ interface VideoPlayerProps {
   onPlay?: () => void
   onPause?: () => void
   onSeek?: (time: number) => void
+  onEnded?: () => void
   externalIsPlaying?: boolean // Control playback from parent
   seekToTime?: number // External seek control
 }
@@ -22,6 +23,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onPlay,
   onPause,
   onSeek,
+  onEnded,
   externalIsPlaying,
   seekToTime
 }) => {
@@ -114,19 +116,42 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => video.removeEventListener('timeupdate', handleTimeUpdate)
   }, [onTimeUpdate])
 
+  // Handle video ended event
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const handleEnded = () => {
+      console.log('📹 Video ended event in VideoPlayer')
+      // Don't set isPlaying to false here - let the parent handle it
+      // setIsPlaying(false)
+      onEnded?.()
+    }
+
+    video.addEventListener('ended', handleEnded)
+    return () => video.removeEventListener('ended', handleEnded)
+  }, [onEnded])
+
   // Handle external play/pause control
   useEffect(() => {
     const video = videoRef.current
     if (!video || externalIsPlaying === undefined) return
 
-    if (externalIsPlaying && video.paused) {
-      video.play()
-      setIsPlaying(true)
-    } else if (!externalIsPlaying && !video.paused) {
-      video.pause()
-      setIsPlaying(false)
-    }
-  }, [externalIsPlaying])
+    // Add a small delay to ensure video is ready after file change
+    const timer = setTimeout(() => {
+      if (externalIsPlaying && video.paused) {
+        console.log('▶️ VideoPlayer: Starting playback (external control)')
+        video.play().catch(err => console.error('Play failed:', err))
+        setIsPlaying(true)
+      } else if (!externalIsPlaying && !video.paused) {
+        console.log('⏸️ VideoPlayer: Pausing playback (external control)')
+        video.pause()
+        setIsPlaying(false)
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [externalIsPlaying, file])
 
   // Handle external seek control
   useEffect(() => {
