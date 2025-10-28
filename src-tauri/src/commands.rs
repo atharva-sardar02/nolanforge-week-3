@@ -3,6 +3,8 @@ use std::process::Command;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use crate::config::Config;
+use crate::services::openai::{transcribe_audio, TranscriptionResponse};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExportOptions {
@@ -595,6 +597,160 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
             e
         )),
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TranscriptionOptions {
+    pub video_path: String,
+    pub language: Option<String>,
+    pub output_format: String, // "srt", "vtt", "txt", "json"
+}
+
+#[tauri::command]
+pub async fn transcribe_video(
+    options: TranscriptionOptions,
+) -> Result<TranscriptionResponse, String> {
+    // Load configuration
+    let config = Config::from_env()
+        .map_err(|e| format!("Configuration error: {}", e))?;
+    
+    println!("🔍 Debug: Starting video transcription...");
+    println!("🔍 Debug: Video path: {}", options.video_path);
+    
+    // Create temporary directory for audio extraction
+    let temp_dir = std::env::temp_dir().join("nolanforge_transcription");
+    fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("Failed to create temp directory: {}", e))?;
+    
+    // Extract audio from video
+    let audio_path = temp_dir.join("audio_for_transcription.mp3");
+    
+    let output = Command::new("ffmpeg")
+        .arg("-i")
+        .arg(&options.video_path)
+        .arg("-vn") // No video
+        .arg("-acodec")
+        .arg("mp3")
+        .arg("-ar")
+        .arg("16000") // 16kHz sample rate (recommended for Whisper)
+        .arg("-ac")
+        .arg("1") // Mono audio
+        .arg("-y")
+        .arg(&audio_path)
+        .output();
+    
+    match output {
+        Ok(result) => {
+            if !result.status.success() {
+                let error_msg = String::from_utf8_lossy(&result.stderr);
+                return Err(format!("FFmpeg error extracting audio: {}", error_msg));
+            }
+        }
+        Err(e) => {
+            return Err(format!("Failed to execute FFmpeg: {}", e));
+        }
+    }
+    
+    println!("🔍 Debug: Audio extracted successfully");
+    
+    // Transcribe audio using OpenAI
+    let transcription = transcribe_audio(
+        &audio_path,
+        &config.openai_api_key,
+        &config.openai_model,
+        options.language.as_deref(),
+    ).await?;
+    
+    // Clean up temporary files
+    let _ = fs::remove_dir_all(&temp_dir);
+    
+    println!("🔍 Debug: Transcription completed successfully");
+    Ok(transcription)
+}
+
+#[tauri::command]
+pub async fn export_transcript(
+    transcript: TranscriptionResponse,
+    output_path: String,
+    format: String,
+) -> Result<String, String> {
+    println!("🔍 Debug: Exporting transcript to {}", output_path);
+    println!("🔍 Debug: Format: {}", format);
+    
+    let content = match format.as_str() {
+        "srt" => generate_srt(&transcript),
+        "vtt" => generate_vtt(&transcript),
+        "txt" => transcript.text.clone(),
+        "json" => serde_json::to_string_pretty(&transcript)
+            .map_err(|e| format!("Failed to serialize transcript: {}", e))?,
+        _ => return Err(format!("Unsupported format: {}", format)),
+    };
+    
+    fs::write(&output_path, content)
+        .map_err(|e| format!("Failed to write transcript file: {}", e))?;
+    
+    println!("🔍 Debug: Transcript exported successfully");
+    Ok(format!("Transcript exported to {}", output_path))
+}
+
+fn generate_srt(transcript: &TranscriptionResponse) -> String {
+    let mut srt_content = String::new();
+    
+    if let Some(segments) = &transcript.segments {
+        for (index, segment) in segments.iter().enumerate() {
+            srt_content.push_str(&format!("{}\n", index + 1));
+            srt_content.push_str(&format!("{} --> {}\n", 
+                format_time_srt(segment.start), 
+                format_time_srt(segment.end)
+            ));
+            srt_content.push_str(&format!("{}\n\n", segment.text.trim()));
+        }
+    } else {
+        // Fallback to full text if no segments
+        srt_content.push_str("1\n");
+        srt_content.push_str("00:00:00,000 --> 00:00:10,000\n");
+        srt_content.push_str(&format!("{}\n", transcript.text));
+    }
+    
+    srt_content
+}
+
+fn generate_vtt(transcript: &TranscriptionResponse) -> String {
+    let mut vtt_content = String::from("WEBVTT\n\n");
+    
+    if let Some(segments) = &transcript.segments {
+        for segment in segments {
+            vtt_content.push_str(&format!("{} --> {}\n", 
+                format_time_vtt(segment.start), 
+                format_time_vtt(segment.end)
+            ));
+            vtt_content.push_str(&format!("{}\n\n", segment.text.trim()));
+        }
+    } else {
+        // Fallback to full text if no segments
+        vtt_content.push_str("00:00:00.000 --> 00:00:10.000\n");
+        vtt_content.push_str(&format!("{}\n", transcript.text));
+    }
+    
+    vtt_content
+}
+
+fn format_time_srt(seconds: f64) -> String {
+    let hours = (seconds / 3600.0) as u32;
+    let minutes = ((seconds % 3600.0) / 60.0) as u32;
+    let secs = (seconds % 60.0) as u32;
+    let millis = ((seconds % 1.0) * 1000.0) as u32;
+    
+    format!("{:02}:{:02}:{:02},{:03}", hours, minutes, secs, millis)
+}
+
+fn format_time_vtt(seconds: f64) -> String {
+    let hours = (seconds / 3600.0) as u32;
+    let minutes = ((seconds % 3600.0) / 60.0) as u32;
+    let secs = (seconds % 60.0) as u32;
+    let millis = ((seconds % 1.0) * 1000.0) as u32;
+    
+    format!("{:02}:{:02}:{:02}.{:03}", hours, minutes, secs, millis)
 }
 
 #[tauri::command]

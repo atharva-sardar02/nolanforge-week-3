@@ -1,4 +1,6 @@
 mod commands;
+mod config;
+mod services;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -18,7 +20,9 @@ pub fn run() {
             commands::export_multi_clip_video,
             commands::export_multi_track_video,
             commands::check_ffmpeg,
-            commands::save_recording_to_file
+            commands::save_recording_to_file,
+            commands::transcribe_video,
+            commands::export_transcript
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

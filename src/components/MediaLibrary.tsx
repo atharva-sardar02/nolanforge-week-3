@@ -4,6 +4,7 @@ import { useMediaStore } from '../state/mediaStore'
 import { useEditState } from '../state/editState'
 import MediaListItem from './MediaListItem'
 import ConfirmationDialog from './ConfirmationDialog'
+import { TranscriptionPanel } from './TranscriptionPanel'
 import { createMediaFile, validateMultipleFiles, getErrorMessage } from '../utils/fileUtils'
 
 type ViewMode = 'grid' | 'list'
@@ -23,6 +24,8 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
   const [previewFile, setPreviewFile] = useState<any>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [warnings, setWarnings] = useState<string[]>([])
+  const [showTranscriptionPanel, setShowTranscriptionPanel] = useState(false)
+  const [selectedFileForTranscription, setSelectedFileForTranscription] = useState<any>(null)
 
   // Handle drag and drop for file upload
   const handleFilesAdded = useCallback(async (files: File[]) => {
@@ -150,6 +153,11 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
     // Show preview modal
     setPreviewFile(file)
     setShowPreview(true)
+  }
+
+  const handleTranscribe = (file: any) => {
+    setSelectedFileForTranscription(file)
+    setShowTranscriptionPanel(true)
   }
 
   const handleDelete = (id: string) => {
@@ -460,6 +468,7 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
               onEdit={handleEdit}
               onPreview={handlePreview}
               onDelete={handleDelete}
+              onTranscribe={handleTranscribe}
               multiTrackMode={multiTrackMode}
               onAddToTrack={handleAddToTrack}
             />
@@ -476,6 +485,7 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
               onEdit={handleEdit}
               onPreview={handlePreview}
               onDelete={handleDelete}
+              onTranscribe={handleTranscribe}
               multiTrackMode={multiTrackMode}
               onAddToTrack={handleAddToTrack}
             />
@@ -601,6 +611,17 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
             </div>
           </div>
         </div>
+      )}
+
+      {/* Transcription Panel */}
+      {showTranscriptionPanel && selectedFileForTranscription && (
+        <TranscriptionPanel 
+          onClose={() => {
+            setShowTranscriptionPanel(false)
+            setSelectedFileForTranscription(null)
+          }}
+          initialVideoPath={selectedFileForTranscription.originalPath}
+        />
       )}
     </div>
   )

@@ -9,6 +9,7 @@ interface MediaListItemProps {
   onEdit?: (file: MediaFile) => void
   onPreview?: (file: MediaFile) => void
   onDelete?: (id: string) => void
+  onTranscribe?: (file: MediaFile) => void
   // Multi-track support
   multiTrackMode?: boolean
   onAddToTrack?: (file: MediaFile, trackId: number) => void
@@ -21,6 +22,7 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   onEdit,
   onPreview,
   onDelete,
+  onTranscribe,
   multiTrackMode = false,
   onAddToTrack
 }) => {
@@ -45,6 +47,11 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     onDelete?.(file.id)
+  }
+
+  const handleTranscribe = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onTranscribe?.(file)
   }
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -151,6 +158,17 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             </button>
+            {file.type === 'video' && (
+              <button
+                onClick={handleTranscribe}
+                className="p-3 text-gray-400 hover:text-purple-400 hover:bg-purple-500/20 rounded-xl transition-all duration-200 hover:scale-110 group/btn"
+                title="Transcribe with AI"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </button>
+            )}
             <button
               onClick={handleEdit}
               className="p-3 text-gray-400 hover:text-green-400 hover:bg-green-500/20 rounded-xl transition-all duration-200 hover:scale-110 group/btn"
@@ -228,6 +246,18 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
                     <span>Preview</span>
                   </span>
                 </button>
+                {file.type === 'video' && (
+                  <button 
+                    onClick={handleTranscribe}
+                    className="group/action relative overflow-hidden bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-400/30 hover:border-purple-400/60 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 hover:scale-105 col-span-2"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-purple-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                    <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+                      <span>🎤</span>
+                      <span>Transcribe with AI</span>
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -252,6 +282,18 @@ const MediaListItem: React.FC<MediaListItemProps> = ({
                   <span>Preview</span>
                 </span>
               </button>
+              {file.type === 'video' && (
+                <button 
+                  onClick={handleTranscribe}
+                  className="group/action relative overflow-hidden bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-400/30 hover:border-purple-400/60 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-glow col-span-2"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-purple-600/10 opacity-0 group-hover/action:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    <span>🎤</span>
+                    <span>Transcribe with AI</span>
+                  </span>
+                </button>
+              )}
             </div>
           )}
         </div>

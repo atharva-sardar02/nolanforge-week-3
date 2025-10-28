@@ -6,6 +6,7 @@ import ContinuousTimeline from '../components/ContinuousTimeline'
 import TrimControls from '../components/TrimControls'
 import TimelineTools from '../components/TimelineTools'
 import OverlayControls from '../components/OverlayControls'
+import { TranscriptionPanel } from '../components/TranscriptionPanel'
 import { useMediaStore } from '../state/mediaStore'
 import { useEditState } from '../state/editState'
 import { useExport } from '../hooks/useExport'
@@ -38,6 +39,7 @@ const Editor: React.FC = () => {
   const [currentDisplayClip, setCurrentDisplayClip] = useState<any>(null)
   const [localTime, setLocalTime] = useState(0)
   const [multiTrackMode, setMultiTrackMode] = useState(false)
+  const [showTranscriptionPanel, setShowTranscriptionPanel] = useState(false)
 
   // Keyboard shortcuts for zoom
   useEffect(() => {
@@ -477,6 +479,14 @@ const Editor: React.FC = () => {
                 <>⬇️ Export</>
               )}
             </button>
+
+            {/* Transcription Button */}
+            <button
+              onClick={() => setShowTranscriptionPanel(true)}
+              className="px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-glow hover:scale-105"
+            >
+              🎤 Transcribe
+            </button>
                   </div>
                 </div>
               </div>
@@ -915,6 +925,11 @@ const Editor: React.FC = () => {
               )}
         </div>
       </div>
+
+      {/* Transcription Panel */}
+      {showTranscriptionPanel && (
+        <TranscriptionPanel onClose={() => setShowTranscriptionPanel(false)} />
+      )}
     </div>
   )
 }
