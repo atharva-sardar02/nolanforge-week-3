@@ -47,8 +47,8 @@ const Recorder: React.FC = () => {
       
       console.log('✅ Recording added to media library:', mediaFile.name)
       
-      // Reset recording state
-      resetRecording()
+      // Don't reset recording state immediately - let user see the buttons
+      // resetRecording() will be called when user clicks "Reset Recording"
       
     } catch (error) {
       console.error('❌ Failed to process recording:', error)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useMediaRecorder } from '../hooks/useMediaRecorder'
 import { useRecordingState } from '../state/recordingState'
 
@@ -23,6 +23,7 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
 }) => {
   const [isStarting, setIsStarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
+  const [hasProcessedBlob, setHasProcessedBlob] = useState(false)
   
   const {
     isRecording,
@@ -39,6 +40,16 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
     resetRecording
   } = useRecordingState()
   
+  // Watch for recordedBlob changes and automatically trigger callback
+  useEffect(() => {
+    console.log('🔍 RecorderControls - recordedBlob changed:', !!recordedBlob, 'isRecording:', isRecording, 'isStopping:', isStopping, 'hasProcessedBlob:', hasProcessedBlob)
+    if (recordedBlob && !isRecording && !isStopping && !hasProcessedBlob) {
+      console.log('🎬 Blob available, triggering onRecordingStop callback')
+      setHasProcessedBlob(true)
+      onRecordingStop?.(recordedBlob)
+    }
+  }, [recordedBlob, isRecording, isStopping, hasProcessedBlob, onRecordingStop])
+  
   // Handle start recording
   const handleStartRecording = async () => {
     if (!stream) {
@@ -47,6 +58,7 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
     }
     
     setIsStarting(true)
+    setHasProcessedBlob(false) // Reset flag for new recording
     try {
       await startRecording()
       onRecordingStart?.()
@@ -63,13 +75,7 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
     setIsStopping(true)
     try {
       await stopRecording()
-      
-      // Wait a moment for the blob to be created
-      setTimeout(() => {
-        if (recordedBlob) {
-          onRecordingStop?.(recordedBlob)
-        }
-      }, 500)
+      console.log('🛑 Recording stopped, waiting for blob...')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to stop recording'
       onRecordingError?.(errorMessage)
@@ -80,6 +86,7 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
   
   // Handle reset recording
   const handleResetRecording = () => {
+    setHasProcessedBlob(false) // Reset flag
     resetRecording()
   }
   
@@ -215,57 +222,73 @@ const RecorderControls: React.FC<RecorderControlsProps> = ({
       )}
       
       {/* Recording Actions */}
-      {recordedBlob && !isRecording && (
+      {!isRecording && (
         <div className="space-y-4">
-          <div className="flex items-center justify-center gap-4">
-            <button
-              onClick={handleResetRecording}
-              className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
-            >
-              Reset Recording
-            </button>
-          </div>
+          {/* Debug info */}
+          {console.log('🔍 Rendering buttons - isRecording:', isRecording, 'isStopping:', isStopping, 'recordedBlob:', !!recordedBlob)}
           
-          {/* Save and Timeline Actions */}
-          <div className="flex items-center justify-center gap-4">
-            {onSaveToDisk && (
-              <button
-                onClick={async () => {
-                  if (recordedBlob) {
-                    const fileName = `recording_${Date.now()}.${settings.format}`
-                    try {
-                      await onSaveToDisk(recordedBlob, fileName)
-                    } catch (error) {
-                      onRecordingError?.(error instanceof Error ? error.message : 'Failed to save recording')
-                    }
-                  }
-                }}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-              >
-                <span>💾</span>
-                <span>Save to Disk</span>
-              </button>
-            )}
-            
-            {onAddToTimeline && (
-              <button
-                onClick={async () => {
-                  if (recordedBlob) {
-                    const fileName = `recording_${Date.now()}.${settings.format}`
-                    try {
-                      await onAddToTimeline(recordedBlob, fileName)
-                    } catch (error) {
-                      onRecordingError?.(error instanceof Error ? error.message : 'Failed to add to timeline')
-                    }
-                  }
-                }}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-              >
-                <span>🎬</span>
-                <span>Add to Timeline</span>
-              </button>
-            )}
-          </div>
+          {/* Show loading state when stopping but blob not ready yet */}
+          {isStopping && !recordedBlob && (
+            <div className="flex items-center justify-center gap-3 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+              <span className="text-blue-300 text-sm">Processing recording...</span>
+            </div>
+          )}
+          
+          {/* Show actions when blob is ready */}
+          {recordedBlob && (
+            <>
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={handleResetRecording}
+                  className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Reset Recording
+                </button>
+              </div>
+              
+              {/* Save and Timeline Actions */}
+              <div className="flex items-center justify-center gap-4">
+                {onSaveToDisk && (
+                  <button
+                    onClick={async () => {
+                      if (recordedBlob) {
+                        const fileName = `recording_${Date.now()}.${settings.format}`
+                        try {
+                          await onSaveToDisk(recordedBlob, fileName)
+                        } catch (error) {
+                          onRecordingError?.(error instanceof Error ? error.message : 'Failed to save recording')
+                        }
+                      }
+                    }}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    <span>💾</span>
+                    <span>Save to Disk</span>
+                  </button>
+                )}
+                
+                {onAddToTimeline && (
+                  <button
+                    onClick={async () => {
+                      if (recordedBlob) {
+                        const fileName = `recording_${Date.now()}.${settings.format}`
+                        try {
+                          await onAddToTimeline(recordedBlob, fileName)
+                        } catch (error) {
+                          onRecordingError?.(error instanceof Error ? error.message : 'Failed to add to timeline')
+                        }
+                      }
+                    }}
+                    className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    <span>🎬</span>
+                    <span>Add to Timeline</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
       
