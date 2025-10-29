@@ -7,7 +7,6 @@ import TrimControls from '../components/TrimControls'
 import TimelineTools from '../components/TimelineTools'
 import OverlayControls from '../components/OverlayControls'
 import { TranscriptionPanel } from '../components/TranscriptionPanel'
-import { SettingsPanel } from '../components/SettingsPanel'
 import { useMediaStore } from '../state/mediaStore'
 import { useEditState } from '../state/editState'
 import { useExport } from '../hooks/useExport'
@@ -41,7 +40,6 @@ const Editor: React.FC = () => {
   const [localTime, setLocalTime] = useState(0)
   const [multiTrackMode, setMultiTrackMode] = useState(true)
   const [showTranscriptionPanel, setShowTranscriptionPanel] = useState(false)
-  const [showSettingsPanel, setShowSettingsPanel] = useState(false)
 
   // Keyboard shortcuts for zoom
   useEffect(() => {
@@ -436,7 +434,7 @@ const Editor: React.FC = () => {
     <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Top Control Bar */}
       <div className="flex-shrink-0 glass border-b border-gray-700/30 backdrop-blur-xl">
-        <div className="px-6 py-3">
+        <div className="px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             {/* Play Button */}
             <button
@@ -490,20 +488,13 @@ const Editor: React.FC = () => {
               🎤 Transcribe
             </button>
 
-            {/* Settings Button */}
-            <button
-              onClick={() => setShowSettingsPanel(true)}
-              className="px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-lg bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white shadow-glow hover:scale-105"
-            >
-              ⚙️ Settings
-            </button>
                   </div>
                 </div>
               </div>
 
       {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto p-8">
+        <div className="w-full space-y-8">
           
           {/* Video Player */}
           <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl">
@@ -670,7 +661,7 @@ const Editor: React.FC = () => {
           {timelineClips.length > 0 && (
             <div className="space-y-4">
               {/* Multi-Track Toggle */}
-              <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-4 shadow-2xl">
+              <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -943,10 +934,6 @@ const Editor: React.FC = () => {
         <TranscriptionPanel onClose={() => setShowTranscriptionPanel(false)} />
       )}
 
-      {/* Settings Panel */}
-      {showSettingsPanel && (
-        <SettingsPanel onClose={() => setShowSettingsPanel(false)} />
-      )}
     </div>
   )
 }

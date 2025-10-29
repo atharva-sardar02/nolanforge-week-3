@@ -148,79 +148,81 @@ const Recorder: React.FC = () => {
           <div className="w-full max-w-6xl">
             <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-16 shadow-2xl">
               {/* Header Section */}
-              <div className="text-center mb-16 space-y-8">
-                <div className="relative mx-auto w-40 h-40 bg-gradient-to-br from-red-500/20 to-purple-500/20 rounded-3xl flex items-center justify-center text-9xl group hover:scale-105 transition-all duration-500 shadow-glow">
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-500/20 to-purple-500/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
-                  <span className="relative z-10">📹</span>
-                </div>
-                <div className="space-y-4">
-                  <h2 className="text-4xl font-bold text-white">
-                    Ready to Record
-                  </h2>
-                  <p className="text-gray-300 text-xl">
-                    Choose your recording source to get started
-                  </p>
+              <div className="mb-20">
+                <div className="flex items-center justify-center gap-6 mb-6">
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-red-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center text-5xl group hover:scale-105 transition-all duration-500 shadow-glow">
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-red-500/20 to-purple-500/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
+                    <span className="relative z-10">📹</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <h2 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-purple-400 to-pink-400">
+                      Ready to Record
+                    </h2>
+                    <p className="text-gray-400 text-lg mt-2">
+                      Choose your recording source to get started
+                    </p>
+                  </div>
                 </div>
               </div>
 
               {/* Recording Options */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-24">
                   <button 
                     onClick={handleWebcamMode}
-                    className="group relative glass rounded-3xl p-12 border-2 border-green-500/30 hover:border-green-400/60 transition-all duration-500 hover:scale-105 hover:shadow-glow-lg overflow-hidden"
+                    className="group relative glass rounded-3xl p-14 border-2 border-green-500/40 hover:border-green-400/80 transition-all duration-500 hover:scale-[1.03] hover:shadow-glow-lg overflow-hidden bg-gradient-to-br from-green-500/5 to-transparent"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-green-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div className="relative z-10 space-y-6">
-                      <div className="w-28 h-28 mx-auto bg-gradient-to-br from-green-500/30 to-green-600/30 rounded-3xl flex items-center justify-center text-7xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 via-green-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="relative z-10 space-y-8 flex flex-col items-center text-center">
+                      <div className="w-32 h-32 bg-gradient-to-br from-green-500/40 to-green-600/40 rounded-3xl flex items-center justify-center text-8xl shadow-xl shadow-green-500/20 group-hover:scale-110 transition-transform duration-300">
                         📷
                       </div>
-                      <div className="space-y-3">
-                        <div className="text-3xl font-bold text-white">Record Webcam</div>
-                        <div className="text-base text-gray-300">Record directly from your camera device</div>
+                      <div className="space-y-4 text-center">
+                        <div className="text-4xl font-black text-white">Record Webcam</div>
+                        <div className="text-lg text-gray-200">Record directly from your camera device</div>
                       </div>
-                      <div className="flex items-center justify-center gap-2 text-green-400 font-medium text-base opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="flex items-center justify-center gap-3 text-green-300 font-bold text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <span>Start Recording</span>
-                        <span>→</span>
+                        <span className="text-xl">→</span>
                       </div>
                     </div>
                   </button>
 
                   <button 
                     onClick={handleScreenMode}
-                    className="group relative glass rounded-3xl p-12 border-2 border-blue-500/30 hover:border-blue-400/60 transition-all duration-500 hover:scale-105 hover:shadow-glow-lg overflow-hidden"
+                    className="group relative glass rounded-3xl p-14 border-2 border-blue-500/40 hover:border-blue-400/80 transition-all duration-500 hover:scale-[1.03] hover:shadow-glow-lg overflow-hidden bg-gradient-to-br from-blue-500/5 to-transparent"
                   >
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="relative z-10 space-y-6">
-                    <div className="w-28 h-28 mx-auto bg-gradient-to-br from-blue-500/30 to-blue-600/30 rounded-3xl flex items-center justify-center text-7xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10 space-y-8 flex flex-col items-center text-center">
+                    <div className="w-32 h-32 bg-gradient-to-br from-blue-500/40 to-blue-600/40 rounded-3xl flex items-center justify-center text-8xl shadow-xl shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
                       🖥️
                     </div>
-                    <div className="space-y-3">
-                      <div className="text-3xl font-bold text-white">Record Screen</div>
-                      <div className="text-base text-gray-300">Capture your entire screen or a specific window</div>
+                    <div className="space-y-4 text-center">
+                      <div className="text-4xl font-black text-white">Record Screen</div>
+                      <div className="text-lg text-gray-200">Capture your entire screen or a specific window</div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 text-blue-400 font-medium text-base opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="flex items-center justify-center gap-3 text-blue-300 font-bold text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <span>Start Recording</span>
-                      <span>→</span>
+                      <span className="text-xl">→</span>
                     </div>
                   </div>
                 </button>
 
                   <button 
                     onClick={handleCombinedMode}
-                    className="group relative glass rounded-3xl p-12 border-2 border-purple-500/30 hover:border-purple-400/60 transition-all duration-500 hover:scale-105 hover:shadow-glow-lg overflow-hidden"
+                    className="group relative glass rounded-3xl p-14 border-2 border-purple-500/40 hover:border-purple-400/80 transition-all duration-500 hover:scale-[1.03] hover:shadow-glow-lg overflow-hidden bg-gradient-to-br from-purple-500/5 to-transparent"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-purple-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="relative z-10 space-y-6">
-                      <div className="w-28 h-28 mx-auto bg-gradient-to-br from-purple-500/30 to-purple-600/30 rounded-3xl flex items-center justify-center text-7xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="relative z-10 space-y-8 flex flex-col items-center text-center">
+                      <div className="w-32 h-32 bg-gradient-to-br from-purple-500/40 to-purple-600/40 rounded-3xl flex items-center justify-center text-8xl shadow-xl shadow-purple-500/20 group-hover:scale-110 transition-transform duration-300">
                         🎥
                     </div>
-                    <div className="space-y-3">
-                        <div className="text-3xl font-bold text-white">Record Both</div>
-                        <div className="text-base text-gray-300">Record screen and webcam simultaneously</div>
+                    <div className="space-y-4 text-center">
+                        <div className="text-4xl font-black text-white">Record Both</div>
+                        <div className="text-lg text-gray-200">Record screen and webcam simultaneously</div>
                     </div>
-                      <div className="flex items-center justify-center gap-2 text-purple-400 font-medium text-base opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="flex items-center justify-center gap-3 text-purple-300 font-bold text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <span>Start Recording</span>
-                      <span>→</span>
+                      <span className="text-xl">→</span>
                     </div>
                   </div>
                 </button>
@@ -253,12 +255,12 @@ const Recorder: React.FC = () => {
                 )}
 
               {/* Quick Tips */}
-              <div className="mt-12 pt-12 border-t border-gray-700/30">
-                <h4 className="text-xl font-bold text-white mb-8 flex items-center gap-2 justify-center">
-                  <span className="text-2xl">💡</span>
+              <div className="mt-20 pt-16 border-t border-gray-700/30">
+                <h4 className="text-2xl font-bold text-gray-300 mb-10 flex items-center gap-3 justify-center">
+                  <span className="text-3xl">💡</span>
                   <span>Pro Recording Tips</span>
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-3">
                     <div className="text-4xl mb-2">🎯</div>
                     <p className="text-lg text-white font-semibold">HD Quality</p>
@@ -288,7 +290,7 @@ const Recorder: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-700/30">
+      <div className="flex items-center justify-between px-8 py-4 border-b border-gray-700/30">
         <div className="flex items-center gap-4">
           <button
             onClick={handleBackToIdle}
@@ -313,9 +315,9 @@ const Recorder: React.FC = () => {
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
             {/* Preview Area - Takes 2 columns on large screens */}
             <div className="xl:col-span-2">
               <div className="glass rounded-3xl border border-gray-700/30 p-8 bg-gradient-to-br from-gray-800/20 to-gray-900/30">

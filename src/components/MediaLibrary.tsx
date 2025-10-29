@@ -5,7 +5,6 @@ import { useEditState } from '../state/editState'
 import MediaListItem from './MediaListItem'
 import ConfirmationDialog from './ConfirmationDialog'
 import { TranscriptionPanel } from './TranscriptionPanel'
-import FileDropZone from './FileDropZone'
 import { createMediaFile, validateMultipleFiles, getErrorMessage } from '../utils/fileUtils'
 
 type ViewMode = 'grid' | 'list'
@@ -325,14 +324,6 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
                 <span className="text-xl">{isDragOver ? '📥' : '👈'}</span>
               </div>
             </div>
-            {/* File selection using FileDropZone */}
-            <div className="pt-4">
-              <FileDropZone
-                onFilesAdded={handleFilesAdded}
-                onFilesAddedWithPath={handleFilesAddedWithPath}
-                className="max-w-md mx-auto"
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -341,7 +332,7 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
 
   return (
     <div 
-      className={`space-y-6 h-full flex flex-col transition-all duration-300 relative ${
+      className={`space-y-6 flex flex-col transition-all duration-300 relative ${
         isDragOver ? 'bg-blue-500/5 rounded-3xl p-4' : ''
       }`}
       onDragOver={handleDragOver}
@@ -503,7 +494,7 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
       
       {/* Files Grid/List */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6 flex-1 overflow-y-auto pr-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6 pr-2">
           {files.map((file) => (
             <MediaListItem
               key={file.id}
@@ -520,7 +511,7 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
           ))}
         </div>
       ) : (
-        <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+        <div className="space-y-4 pr-2">
           {files.map((file) => (
             <MediaListItem
               key={file.id}
