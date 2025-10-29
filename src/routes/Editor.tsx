@@ -328,9 +328,9 @@ const Editor: React.FC = () => {
           return
         }
 
-        const missingPaths = clipsForExport.filter(c => !c.inputPath)
+        const missingPaths = clipsForExport.filter(c => !c.inputPath || c.inputPath.trim() === '')
         if (missingPaths.length > 0) {
-          alert('⚠️ Some clips are missing file paths. Please re-import the files.')
+          alert('⚠️ Some clips are missing file paths. Please re-import the files using the file browser (not drag & drop).')
           return
         }
 
@@ -381,9 +381,9 @@ const Editor: React.FC = () => {
           return
         }
 
-        const missingPaths = clipsForExport.filter(c => !c.inputPath)
+        const missingPaths = clipsForExport.filter(c => !c.inputPath || c.inputPath.trim() === '')
         if (missingPaths.length > 0) {
-          alert('⚠️ Some clips are missing file paths. Please re-import the files.')
+          alert('⚠️ Some clips are missing file paths. Please re-import the files using the file browser (not drag & drop).')
           return
         }
 

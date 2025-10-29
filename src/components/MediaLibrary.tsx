@@ -5,6 +5,7 @@ import { useEditState } from '../state/editState'
 import MediaListItem from './MediaListItem'
 import ConfirmationDialog from './ConfirmationDialog'
 import { TranscriptionPanel } from './TranscriptionPanel'
+import FileDropZone from './FileDropZone'
 import { createMediaFile, validateMultipleFiles, getErrorMessage } from '../utils/fileUtils'
 
 type ViewMode = 'grid' | 'list'
@@ -56,6 +57,66 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
         } catch (err) {
           console.error(`Failed to process file ${file.name}:`, err)
           setError(`Failed to process ${file.name}`)
+        }
+      }
+      
+      if (validation.validFiles.length > 0) {
+        const summary = `Successfully imported ${validation.validFiles.length} file(s)`
+        if (validation.invalidFiles.length > 0) {
+          console.warn(`${summary}, ${validation.invalidFiles.length} file(s) failed validation`)
+        } else {
+          console.log(summary)
+        }
+      }
+      
+    } catch (error) {
+      const errorMessage = getErrorMessage(error)
+      setError(`Failed to process files: ${errorMessage}`)
+      console.error('Error processing files:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [addFile, setLoading, setError, clearError])
+
+  // Handle files with path information (from Tauri file dialog)
+  const handleFilesAddedWithPath = useCallback(async (filesWithPath: { file: File; path: string }[]) => {
+    clearError()
+    setWarnings([])
+    setLoading(true)
+    
+    try {
+      const files = filesWithPath.map(f => f.file)
+      const validation = validateMultipleFiles(files)
+      
+      if (validation.warnings.length > 0) {
+        const allWarnings = validation.warnings.flatMap(w => w.warnings)
+        setWarnings(allWarnings)
+      }
+      
+      if (validation.invalidFiles.length > 0) {
+        const errorMessages = validation.invalidFiles.map(({ file, error }) => 
+          `${file.name}: ${error}`
+        )
+        setError(errorMessages.join('; '))
+      }
+      
+      // Process valid files with path information
+      for (const fileWithPath of filesWithPath) {
+        const { file, path } = fileWithPath
+        if (validation.validFiles.includes(file)) {
+          try {
+            // Attach the path to the file object for createMediaFile to use
+            Object.defineProperty(file, 'path', {
+              value: path,
+              writable: false,
+              configurable: true
+            })
+            const mediaFile = await createMediaFile(file)
+            addFile(mediaFile)
+          } catch (err) {
+            console.error(`Failed to process file ${file.name}:`, err)
+            setError(`Failed to process ${file.name}`)
+          }
         }
       }
       
@@ -264,29 +325,13 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
                 <span className="text-xl">{isDragOver ? '📥' : '👈'}</span>
               </div>
             </div>
-            {/* File selection buttons */}
-            <div className="pt-4 flex gap-4 justify-center">
-              <button
-                onClick={() => {
-                  console.log('🧪 Test button clicked')
-                  // Create a test file input
-                  const input = document.createElement('input')
-                  input.type = 'file'
-                  input.multiple = true
-                  input.accept = 'video/*'
-                  input.onchange = (e) => {
-                    const files = Array.from((e.target as HTMLInputElement).files || [])
-                    console.log('🧪 Files selected:', files.map(f => f.name))
-                    if (files.length > 0) {
-                      handleFilesAdded(files)
-                    }
-                  }
-                  input.click()
-                }}
-                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105"
-              >
-                🧪 Test File Selection
-              </button>
+            {/* File selection using FileDropZone */}
+            <div className="pt-4">
+              <FileDropZone
+                onFilesAdded={handleFilesAdded}
+                onFilesAddedWithPath={handleFilesAddedWithPath}
+                className="max-w-md mx-auto"
+              />
             </div>
           </div>
         </div>

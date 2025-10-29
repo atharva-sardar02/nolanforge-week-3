@@ -321,22 +321,28 @@ pub async fn export_multi_track_video(options: MultiTrackExportOptions) -> Resul
 
     // Build the final filter complex for main video
     let main_filter_complex = filter_complex_parts.join(";");
-    let final_output_name = if sorted_main_clips.len() > 1 { 
-        format!("out{}", sorted_main_clips.len() - 1) 
-    } else { 
-        "0:v".to_string() 
-    };
     
     println!("🔍 Debug: Main filter complex: {}", main_filter_complex);
-    println!("🔍 Debug: Final output name: {}", final_output_name);
+    println!("🔍 Debug: Number of clips processed: {}", sorted_main_clips.len());
 
     // Create the main video with proper timing
     let mut main_cmd = Command::new("ffmpeg");
     for input in &filter_inputs {
         main_cmd.arg("-i").arg(input);
     }
-    main_cmd.arg("-filter_complex").arg(&main_filter_complex);
-    main_cmd.arg("-map").arg(&format!("[{}]", final_output_name));
+    
+    if !main_filter_complex.is_empty() {
+        // Use filter complex when we have clips to process
+        let final_output_name = format!("out{}", sorted_main_clips.len() - 1);
+        println!("🔍 Debug: Final output name: {}", final_output_name);
+        main_cmd.arg("-filter_complex").arg(&main_filter_complex);
+        main_cmd.arg("-map").arg(&format!("[{}]", final_output_name));
+    } else {
+        // No clips to process, just copy the background
+        println!("🔍 Debug: No clips to process, copying background");
+        main_cmd.arg("-map").arg("0:v");
+    }
+    
     main_cmd.arg("-c:v").arg("libx264");
     main_cmd.arg("-y").arg(&main_video_path);
 
