@@ -436,61 +436,88 @@ const Editor: React.FC = () => {
       <div className="flex-shrink-0 glass border-b border-gray-700/30 backdrop-blur-xl">
         <div className="px-8 py-4">
           <div className="flex items-center justify-between gap-4">
-            {/* Play Button */}
-            <button
-              onClick={() => setPlaying(!isPlaying)}
-              disabled={timelineClips.length === 0}
-              className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-3 text-lg ${
-                timelineClips.length === 0 
-                  ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed' 
-                  : isPlaying 
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-glow' 
-                    : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-glow'
-              }`}
-            >
-              {isPlaying ? '⏸️ Pause' : '▶️ Play'}
-            </button>
+            {/* Left Side: Play Button and Clip Count */}
+            <div className="flex items-center gap-4">
+              {/* Play Button */}
+              <button
+                onClick={() => setPlaying(!isPlaying)}
+                disabled={timelineClips.length === 0}
+                className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-3 text-lg ${
+                  timelineClips.length === 0 
+                    ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed' 
+                    : isPlaying 
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-glow' 
+                      : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-glow'
+                }`}
+              >
+                {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+              </button>
 
-            {/* Clip Count */}
-            {timelineClips.length > 0 && (
-              <div className="flex items-center gap-3 px-4 py-2 bg-blue-500/20 border border-blue-400/30 rounded-xl">
-                <span className="text-blue-300 font-medium text-sm">
-                  {timelineClips.length} clip{timelineClips.length !== 1 ? 's' : ''} on timeline
-                </span>
+              {/* Clip Count */}
+              {timelineClips.length > 0 && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-blue-500/20 border border-blue-400/30 rounded-xl">
+                  <span className="text-blue-300 font-medium text-sm">
+                    {timelineClips.length} clip{timelineClips.length !== 1 ? 's' : ''} on timeline
+                  </span>
                 </div>
-            )}
-
-            {/* Export Button */}
-            <button
-              onClick={handleExport}
-              disabled={isExporting || timelineClips.length === 0}
-              className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-lg ${
-                isExporting || timelineClips.length === 0
-                  ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-glow hover:scale-105'
-              }`}
-            >
-              {isExporting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Exporting...</span>
-                </>
-              ) : (
-                <>⬇️ Export</>
               )}
-            </button>
+            </div>
 
-            {/* Transcription Button */}
-            <button
-              onClick={() => setShowTranscriptionPanel(true)}
-              className="px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-glow hover:scale-105"
-            >
-              🎤 Transcribe
-            </button>
-
-                  </div>
+            {/* Right Side: Timeline Mode Toggle and Export Button */}
+            <div className="flex items-center gap-4">
+              {/* Timeline Mode Toggle */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <span className={multiTrackMode ? 'text-gray-500' : 'text-blue-400'}>Single</span>
+                  <span className="text-gray-600">•</span>
+                  <span className={multiTrackMode ? 'text-blue-400' : 'text-gray-500'}>Multi</span>
                 </div>
+                <button
+                  onClick={() => setMultiTrackMode(!multiTrackMode)}
+                  className={`
+                    relative w-16 h-8 rounded-full transition-all duration-300
+                    ${multiTrackMode 
+                      ? 'bg-blue-600 shadow-lg shadow-blue-500/25' 
+                      : 'bg-gray-600 hover:bg-gray-500'
+                    }
+                  `}
+                  title={multiTrackMode ? 'Switch to Single Track' : 'Switch to Multi-Track'}
+                >
+                  <div 
+                    className={`
+                      absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300
+                      ${multiTrackMode ? 'translate-x-9' : 'translate-x-1'}
+                    `}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+                    {multiTrackMode ? '🎵' : '📊'}
+                  </div>
+                </button>
               </div>
+
+              {/* Export Button */}
+              <button
+                onClick={handleExport}
+                disabled={isExporting || timelineClips.length === 0}
+                className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-lg ${
+                  isExporting || timelineClips.length === 0
+                    ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-glow hover:scale-105'
+                }`}
+              >
+                {isExporting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>⬇️ Export</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto p-8">
@@ -660,60 +687,6 @@ const Editor: React.FC = () => {
           {/* Continuous Timeline - Shows all clips */}
           {timelineClips.length > 0 && (
             <div className="space-y-4">
-              {/* Multi-Track Toggle */}
-              <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      <span className="text-xl">🎵</span>
-                      <span>Timeline Mode</span>
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <span className={multiTrackMode ? 'text-gray-500' : 'text-blue-400'}>Single Track</span>
-                      <span className="text-gray-600">•</span>
-                      <span className={multiTrackMode ? 'text-blue-400' : 'text-gray-500'}>Multi-Track</span>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => setMultiTrackMode(!multiTrackMode)}
-                    className={`
-                      relative w-16 h-8 rounded-full transition-all duration-300
-                      ${multiTrackMode 
-                        ? 'bg-blue-600 shadow-lg shadow-blue-500/25' 
-                        : 'bg-gray-600 hover:bg-gray-500'
-                      }
-                    `}
-                    title={multiTrackMode ? 'Switch to Single Track' : 'Switch to Multi-Track'}
-                  >
-                    <div 
-                      className={`
-                        absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300
-                        ${multiTrackMode ? 'translate-x-9' : 'translate-x-1'}
-                      `}
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                      {multiTrackMode ? '🎵' : '📊'}
-                    </div>
-                  </button>
-                </div>
-                
-                {multiTrackMode && (
-                  <div className="mt-3 p-3 bg-blue-600/20 rounded-xl border border-blue-500/30">
-                    <div className="text-sm text-blue-200">
-                      <div className="font-medium mb-1">🎬 Multi-Track Features:</div>
-                      <ul className="text-xs space-y-1 text-blue-300">
-                        <li>• Track 0: Main video (background)</li>
-                        <li>• Track 1+: Overlay videos (webcam, graphics)</li>
-                        <li>• Individual track controls (mute, solo, lock)</li>
-                        <li>• Drag clips between tracks</li>
-                        <li>• Professional video composition</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </div>
-
               <ContinuousTimeline
                 clips={timelineClips}
                 mediaFiles={files}
@@ -926,6 +899,22 @@ const Editor: React.FC = () => {
                   </div>
                 </div>
               )}
+
+          {/* Multi-Track Features Info - At bottom of page */}
+          {multiTrackMode && (
+            <div className="mt-8 glass rounded-3xl border border-blue-500/30 backdrop-blur-xl p-6 shadow-2xl bg-blue-600/20">
+              <div className="text-sm text-blue-200">
+                <div className="font-medium mb-3 text-lg">🎬 Multi-Track Features:</div>
+                <ul className="text-sm space-y-2 text-blue-300">
+                  <li>• Track 0: Main video (background)</li>
+                  <li>• Track 1+: Overlay videos (webcam, graphics)</li>
+                  <li>• Individual track controls (mute, solo, lock)</li>
+                  <li>• Drag clips between tracks</li>
+                  <li>• Professional video composition</li>
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

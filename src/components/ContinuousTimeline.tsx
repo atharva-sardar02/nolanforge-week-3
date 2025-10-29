@@ -3,7 +3,6 @@ import { formatDuration } from '../utils/fileUtils'
 import { TimelineClip } from '../state/editState'
 import { MediaFile } from '../state/mediaStore'
 import { useTrackState } from '../state/trackState'
-import TrackHeader from './TrackHeader'
 import TrackRow from './TrackRow'
 
 interface TimelineProps {
@@ -310,62 +309,111 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
         {/* Timeline Tracks */}
         {multiTrackMode ? (
           <div className="border-2 border-gray-700/50 rounded-b-xl overflow-hidden">
-            {/* Track Headers Row */}
-            <div className="flex bg-gray-800/50 border-b border-gray-700/30">
-              {/* Empty space to align with timeline content */}
-              <div className="w-48 flex-shrink-0"></div>
-              
-              {/* Track Headers */}
-              <div className="flex flex-1">
+            {/* Track Rows */}
+            <div className="flex relative overflow-hidden">
+              {/* Track Labels Column with Controls */}
+              <div className="w-48 flex-shrink-0 bg-gray-800/30 border-r border-gray-700/30">
                 {tracks.map((track) => (
-                  <div key={track.id} className="flex-1">
-                    <TrackHeader
-                      track={track}
-                      isSelected={track.id === selectedTrackId}
-                      canRemove={canRemoveTrack(track.id)}
-                      onSelect={() => selectTrack(track.id)}
-                      onMute={(muted) => setTrackMute(track.id, muted)}
-                      onSolo={(solo) => setTrackSolo(track.id, solo)}
-                      onLock={(locked) => setTrackLock(track.id, locked)}
-                      onVisibility={(visible) => setTrackVisibility(track.id, visible)}
-                      onRemove={() => removeTrack(track.id)}
-                      onRename={(name) => updateTrack(track.id, { name })}
-                    />
+                  <div 
+                    key={track.id}
+                    className="flex items-center justify-between px-3 py-2 border-b border-gray-700/30 gap-2"
+                    style={{ height: `${track.height}px` }}
+                  >
+                    {/* Left side: Track dot and name */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div 
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: track.color }}
+                      ></div>
+                      <span className="text-sm font-medium text-gray-300 truncate">
+                        {track.name}
+                      </span>
+                    </div>
+                    
+                    {/* Right side: Track Controls */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* Visibility Toggle */}
+                      <button
+                        onClick={() => setTrackVisibility(track.id, !track.visible)}
+                        className={`
+                          p-1 rounded text-xs
+                          ${track.visible 
+                            ? 'text-green-400 hover:text-green-300' 
+                            : 'text-gray-500 hover:text-gray-400'
+                          }
+                        `}
+                        title={track.visible ? 'Hide track' : 'Show track'}
+                      >
+                        {track.visible ? '👁️' : '👁️‍🗨️'}
+                      </button>
+
+                      {/* Lock Toggle */}
+                      <button
+                        onClick={() => setTrackLock(track.id, !track.locked)}
+                        className={`
+                          p-1 rounded text-xs
+                          ${track.locked 
+                            ? 'text-yellow-400 hover:text-yellow-300' 
+                            : 'text-gray-500 hover:text-gray-400'
+                          }
+                        `}
+                        title={track.locked ? 'Unlock track' : 'Lock track'}
+                      >
+                        {track.locked ? '🔒' : '🔓'}
+                      </button>
+
+                      {/* Solo Toggle */}
+                      <button
+                        onClick={() => setTrackSolo(track.id, !track.solo)}
+                        className={`
+                          p-1 rounded text-xs
+                          ${track.solo 
+                            ? 'text-purple-400 hover:text-purple-300' 
+                            : 'text-gray-500 hover:text-gray-400'
+                          }
+                        `}
+                        title={track.solo ? 'Unsolo track' : 'Solo track'}
+                      >
+                        S
+                      </button>
+
+                      {/* Mute Toggle */}
+                      <button
+                        onClick={() => setTrackMute(track.id, !track.muted)}
+                        className={`
+                          p-1 rounded text-xs
+                          ${track.muted 
+                            ? 'text-red-400 hover:text-red-300' 
+                            : 'text-gray-500 hover:text-gray-400'
+                          }
+                        `}
+                        title={track.muted ? 'Unmute track' : 'Mute track'}
+                      >
+                        M
+                      </button>
+
+                      {/* Remove Track */}
+                      {canRemoveTrack(track.id) && (
+                        <button
+                          onClick={() => removeTrack(track.id)}
+                          className="p-1 rounded text-xs text-red-400 hover:text-red-300"
+                          title="Remove track"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 
                 {/* Add Track Button */}
                 <button
                   onClick={addTrack}
-                  className="w-48 px-3 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 hover:text-white border-l border-gray-700/30 transition-colors text-sm font-medium"
+                  className="w-full px-3 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 hover:text-white border-t border-gray-700/30 transition-colors text-sm font-medium"
                   title="Add Track"
                 >
                   + Add Track
                 </button>
-              </div>
-            </div>
-
-            {/* Track Rows */}
-            <div className="flex relative overflow-hidden">
-              {/* Track Labels Column */}
-              <div className="w-48 flex-shrink-0 bg-gray-800/30">
-                {tracks.map((track) => (
-                  <div 
-                    key={track.id}
-                    className="flex items-center justify-center px-3 py-2 border-b border-gray-700/30"
-                    style={{ height: `${track.height}px` }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: track.color }}
-                      ></div>
-                      <span className="text-sm font-medium text-gray-300">
-                        {track.name}
-                      </span>
-                    </div>
-                  </div>
-                ))}
               </div>
 
               {/* Timeline Content */}
@@ -650,16 +698,6 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
               <span className="text-lg">🔴</span>
               <span>Red = Playhead</span>
             </span>
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-4 bg-yellow-400"></span>
-              <span>Yellow = Clip trims</span>
-            </span>
-            {multiTrackMode && (
-              <span className="flex items-center gap-2">
-                <span className="text-lg">🎵</span>
-                <span>Multi-track mode</span>
-              </span>
-            )}
           </div>
         </div>
       </div>

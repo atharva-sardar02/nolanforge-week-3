@@ -35,7 +35,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isMuted, setIsMuted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [playbackRate, setPlaybackRate] = useState(1)
 
   // Handle video load
   useEffect(() => {
@@ -279,15 +278,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [isMuted, volume])
 
-  const handleFullscreen = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    if (video.requestFullscreen) {
-      video.requestFullscreen()
-    }
-  }, [])
-
   const handleFrameStep = useCallback((direction: 'forward' | 'backward') => {
     const video = videoRef.current
     if (!video) return
@@ -300,14 +290,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setCurrentTime(newTime)
     onSeek?.(newTime)
   }, [duration, onSeek])
-
-  const handlePlaybackRateChange = useCallback((rate: number) => {
-    const video = videoRef.current
-    if (!video) return
-
-    video.playbackRate = rate
-    setPlaybackRate(rate)
-  }, [])
 
   if (!file) {
     return (
@@ -383,14 +365,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           duration={duration}
           volume={volume}
           isMuted={isMuted}
-          playbackRate={playbackRate}
           onPlayPause={handlePlayPause}
           onSeek={handleSeek}
           onVolumeChange={handleVolumeChange}
           onMuteToggle={handleMuteToggle}
-          onFullscreen={handleFullscreen}
           onFrameStep={handleFrameStep}
-          onPlaybackRateChange={handlePlaybackRateChange}
         />
       </div>
     </div>

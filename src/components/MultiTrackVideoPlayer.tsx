@@ -38,7 +38,6 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
   const [error, _setError] = useState<string | null>(null)
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState(1)
 
   // Initialize video composer
   useEffect(() => {
@@ -237,11 +236,6 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
     }
   }, [isMuted])
 
-  const handleFullscreen = useCallback(() => {
-    if (canvasRef.current?.requestFullscreen) {
-      canvasRef.current.requestFullscreen()
-    }
-  }, [])
 
   const handleFrameStep = useCallback((direction: 'forward' | 'backward') => {
     const frameTime = 1 / 30 // Assuming 30fps
@@ -250,10 +244,6 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
     
     onSeek?.(newTime)
   }, [totalDuration, currentTime, onSeek])
-
-  const handlePlaybackRateChange = useCallback((rate: number) => {
-    setPlaybackRate(rate)
-  }, [])
 
   if (clips.length === 0) {
     return (
@@ -337,14 +327,11 @@ const MultiTrackVideoPlayer: React.FC<MultiTrackVideoPlayerProps> = ({
           duration={totalDuration}
           volume={volume}
           isMuted={isMuted}
-          playbackRate={playbackRate}
           onPlayPause={handlePlayPause}
           onSeek={handleSeek}
           onVolumeChange={handleVolumeChange}
           onMuteToggle={handleMuteToggle}
-          onFullscreen={handleFullscreen}
           onFrameStep={handleFrameStep}
-          onPlaybackRateChange={handlePlaybackRateChange}
         />
       </div>
     </div>
