@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { TimelineClip } from '../state/editState'
 
 interface OverlayControlsProps {
@@ -27,6 +27,19 @@ const OverlayControls: React.FC<OverlayControlsProps> = ({
     blendMode: 'normal',
     visible: true
   })
+
+  // Sync overlay settings from clip when it changes
+  useEffect(() => {
+    if (clip && clip.trackId > 0) {
+      setOverlaySettings({
+        position: clip.overlayPosition || { x: 0, y: 0 },
+        size: clip.overlaySize || { width: 300, height: 200 },
+        opacity: clip.overlayOpacity ?? 0.8,
+        blendMode: clip.overlayBlendMode || 'normal',
+        visible: clip.overlayVisible ?? true
+      })
+    }
+  }, [clip?.id, clip?.overlayPosition, clip?.overlaySize, clip?.overlayOpacity, clip?.overlayBlendMode, clip?.overlayVisible])
 
   const handlePositionChange = (axis: 'x' | 'y', value: number) => {
     const newSettings = {
@@ -146,96 +159,55 @@ const OverlayControls: React.FC<OverlayControlsProps> = ({
 
   if (!clip || clip.trackId === 0) {
     return (
-      <div className={`glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl ${className}`}>
-        <div className="text-center text-gray-400">
-          <div className="text-4xl mb-2">🎥</div>
-          <h3 className="text-lg font-medium mb-2">No Overlay Selected</h3>
-          <p className="text-sm">Select an overlay clip (Track 1+) to adjust its properties</p>
+      <div className={`p-3 bg-gray-800/30 rounded-lg border border-gray-700/30 ${className}`}>
+        <div className="text-center text-gray-400 text-sm">
+          <span className="font-medium">No Overlay Selected</span>
+          <span className="mx-2">•</span>
+          <span>Select an overlay clip (Track 1+) to adjust its properties</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl ${className}`}>
-      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-        <span className="text-2xl">🎛️</span>
-        <span>Overlay Controls</span>
-        <span className="ml-auto text-sm font-normal text-gray-400">
-          Track {clip.trackId}
-        </span>
-      </h3>
-
-      <div className="space-y-6">
-        {/* Visibility Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl">
-          <div className="flex items-center gap-3">
-            <span className="text-lg">👁️</span>
-            <span className="text-gray-300">Visibility</span>
-          </div>
-          <button
-            onClick={handleVisibilityToggle}
+    <div className={`glass rounded-lg border border-gray-700/30 backdrop-blur-xl p-4 shadow-xl ${className}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+          <span>🎛️</span>
+          <span>Overlay Controls</span>
+          <span className="text-xs font-normal text-gray-400">(Track {clip.trackId})</span>
+        </h3>
+        <button
+          onClick={handleVisibilityToggle}
+          className={`
+            relative w-10 h-5 rounded-full transition-all duration-300
+            ${overlaySettings.visible 
+              ? 'bg-green-600' 
+              : 'bg-gray-600 hover:bg-gray-500'
+            }
+          `}
+          title={overlaySettings.visible ? 'Hide overlay' : 'Show overlay'}
+        >
+          <div 
             className={`
-              relative w-12 h-6 rounded-full transition-all duration-300
-              ${overlaySettings.visible 
-                ? 'bg-green-600 shadow-lg shadow-green-500/25' 
-                : 'bg-gray-600 hover:bg-gray-500'
-              }
+              absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-lg transition-transform duration-300
+              ${overlaySettings.visible ? 'translate-x-5' : 'translate-x-0.5'}
             `}
-          >
-            <div 
-              className={`
-                absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-lg transition-transform duration-300
-                ${overlaySettings.visible ? 'translate-x-6' : 'translate-x-0.5'}
-              `}
-            />
-          </button>
-        </div>
+          />
+        </button>
+      </div>
 
-        {/* Position Controls */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-            <span>📍</span>
-            <span>Position</span>
-          </h4>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">X Position</label>
-              <input
-                type="range"
-                min="0"
-                max="1000"
-                value={overlaySettings.position.x}
-                onChange={(e) => handlePositionChange('x', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="text-xs text-gray-500 mt-1">{overlaySettings.position.x}px</div>
-            </div>
-            
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Y Position</label>
-              <input
-                type="range"
-                min="0"
-                max="600"
-                value={overlaySettings.position.y}
-                onChange={(e) => handlePositionChange('y', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="text-xs text-gray-500 mt-1">{overlaySettings.position.y}px</div>
-            </div>
-          </div>
-
-          {/* Position Presets */}
-          <div className="space-y-2">
-            <label className="block text-sm text-gray-400">Quick Position</label>
-            <div className="grid grid-cols-5 gap-2">
+      <div className="space-y-3">
+        {/* Position Controls - Compact */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-gray-400 font-medium">Position</label>
+            <div className="flex gap-1">
               {(['top-left', 'top-right', 'center', 'bottom-left', 'bottom-right'] as const).map((preset) => (
                 <button
                   key={preset}
                   onClick={() => handlePresetPosition(preset)}
-                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors"
+                  className="w-6 h-6 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors"
                   title={preset.replace('-', ' ')}
                 >
                   {preset === 'top-left' && '↖️'}
@@ -247,52 +219,80 @@ const OverlayControls: React.FC<OverlayControlsProps> = ({
               ))}
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">X</span>
+                <span className="text-xs text-gray-400">{overlaySettings.position.x}px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1000"
+                value={overlaySettings.position.x}
+                onChange={(e) => handlePositionChange('x', parseInt(e.target.value))}
+                className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">Y</span>
+                <span className="text-xs text-gray-400">{overlaySettings.position.y}px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="600"
+                value={overlaySettings.position.y}
+                onChange={(e) => handlePositionChange('y', parseInt(e.target.value))}
+                className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Size Controls */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-            <span>📏</span>
-            <span>Size</span>
-          </h4>
-          
-          <div className="grid grid-cols-2 gap-4">
+        {/* Size Controls - Compact */}
+        <div>
+          <label className="text-xs text-gray-400 font-medium mb-2 block">Size</label>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Width</label>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">W</span>
+                <span className="text-xs text-gray-400">{overlaySettings.size.width}px</span>
+              </div>
               <input
                 type="range"
                 min="100"
                 max="800"
                 value={overlaySettings.size.width}
                 onChange={(e) => handleSizeChange('width', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
               />
-              <div className="text-xs text-gray-500 mt-1">{overlaySettings.size.width}px</div>
             </div>
-            
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Height</label>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">H</span>
+                <span className="text-xs text-gray-400">{overlaySettings.size.height}px</span>
+              </div>
               <input
                 type="range"
                 min="100"
                 max="600"
                 value={overlaySettings.size.height}
                 onChange={(e) => handleSizeChange('height', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
               />
-              <div className="text-xs text-gray-500 mt-1">{overlaySettings.size.height}px</div>
             </div>
           </div>
         </div>
 
-        {/* Opacity Control */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-            <span>🌫️</span>
-            <span>Opacity</span>
-          </h4>
-          
+        {/* Opacity and Blend Mode - Compact Row */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs text-gray-400 font-medium">Opacity</label>
+              <span className="text-xs text-gray-400">{Math.round(overlaySettings.opacity * 100)}%</span>
+            </div>
             <input
               type="range"
               min="0"
@@ -300,33 +300,26 @@ const OverlayControls: React.FC<OverlayControlsProps> = ({
               step="0.1"
               value={overlaySettings.opacity}
               onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
             />
-            <div className="text-xs text-gray-500 mt-1">{Math.round(overlaySettings.opacity * 100)}%</div>
           </div>
-        </div>
-
-        {/* Blend Mode */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-            <span>🎨</span>
-            <span>Blend Mode</span>
-          </h4>
-          
-          <div className="grid grid-cols-2 gap-2">
-            {(['normal', 'multiply', 'screen', 'overlay'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => handleBlendModeChange(mode)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  overlaySettings.blendMode === mode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
+          <div>
+            <label className="text-xs text-gray-400 font-medium mb-1 block">Blend Mode</label>
+            <div className="grid grid-cols-2 gap-1">
+              {(['normal', 'multiply', 'screen', 'overlay'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => handleBlendModeChange(mode)}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    overlaySettings.blendMode === mode
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

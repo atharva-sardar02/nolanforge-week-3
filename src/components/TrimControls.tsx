@@ -43,171 +43,131 @@ const TrimControls: React.FC<TrimControlsProps> = ({
     onTrimEndChange(time)
   }, [onTrimEndChange])
 
+  const isWithinRange = currentTime >= trimStart && currentTime <= trimEnd
+  
   return (
-    <div className={`glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-8 shadow-2xl ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-          <span className="text-3xl">✂️</span>
-          Trim Controls
-        </h3>
-        <div className={`px-4 py-2 rounded-xl font-bold text-sm border-2 ${
-          isValid 
-            ? 'bg-green-500/20 text-green-300 border-green-400/30 shadow-glow' 
-            : 'bg-red-500/20 text-red-300 border-red-400/30'
-        }`}>
-          {isValid ? '✓ Valid' : '✗ Invalid'}
+    <div className={`glass rounded-lg border border-gray-700/30 backdrop-blur-xl p-3 shadow-xl ${className}`}>
+      {/* Line 1: Sliders and Range Info */}
+      <div className="flex items-center gap-3 mb-2">
+        {/* Trim Start */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-gray-400 font-medium">Start</label>
+            <span className="font-mono text-xs text-blue-400">{formatDuration(trimStart)}</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={duration}
+            step="0.1"
+            value={trimStart}
+            onChange={handleTrimStartChange}
+            className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+          />
+        </div>
+        
+        {/* Duration Display */}
+        <div className="px-2 py-1 bg-gray-800/50 rounded text-xs">
+          <span className="text-gray-400">Dur: </span>
+          <span className="font-mono text-green-400 font-medium">{formatDuration(trimDuration)}</span>
+        </div>
+
+        {/* Trim End */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-gray-400 font-medium">End</label>
+            <span className="font-mono text-xs text-purple-400">{formatDuration(trimEnd)}</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={duration}
+            step="0.1"
+            value={trimEnd}
+            onChange={handleTrimEndChange}
+            className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+          />
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Trim Range Display */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 bg-gray-800/40 rounded-2xl backdrop-blur-sm">
-            <span className="block text-xs text-gray-400 uppercase tracking-wider mb-2">Start</span>
-            <span className="font-mono text-2xl font-bold text-blue-400">{formatDuration(trimStart)}</span>
-          </div>
-          <div className="p-4 bg-gray-800/40 rounded-2xl backdrop-blur-sm">
-            <span className="block text-xs text-gray-400 uppercase tracking-wider mb-2">Duration</span>
-            <span className="font-mono text-2xl font-bold text-green-400">{formatDuration(trimDuration)}</span>
-          </div>
-          <div className="p-4 bg-gray-800/40 rounded-2xl backdrop-blur-sm">
-            <span className="block text-xs text-gray-400 uppercase tracking-wider mb-2">End</span>
-            <span className="font-mono text-2xl font-bold text-purple-400">{formatDuration(trimEnd)}</span>
-          </div>
-        </div>
+      {/* Line 2: Action Buttons, Current Time, Warning */}
+      <div className="flex items-center gap-2">
+        {/* Action Buttons */}
+        <button
+          onClick={onSeekToTrimStart}
+          className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+          title="Go to trim start"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M11 17l-5-5 5-5" />
+            <path d="M18 17l-5-5 5-5" />
+          </svg>
+          <span>Start</span>
+        </button>
+        
+        <button
+          onClick={onSeekToTrimEnd}
+          className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+          title="Go to trim end"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M13 17l5-5-5-5" />
+            <path d="M6 17l5-5-5-5" />
+          </svg>
+          <span>End</span>
+        </button>
 
-        {/* Trim Range Sliders */}
-        <div className="space-y-5">
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <label className="text-base font-bold text-white">
-                🟦 Trim Start
-              </label>
-              <span className="font-mono text-sm font-semibold text-blue-400">
-                {formatDuration(trimStart)}
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max={duration}
-              step="0.1"
-              value={trimStart}
-              onChange={handleTrimStartChange}
-              className="w-full h-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-full appearance-none cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(trimStart / duration) * 100}%, #374151 ${(trimStart / duration) * 100}%, #374151 100%)`
-              }}
-            />
-          </div>
+        <button
+          onClick={onSetTrimStartToCurrent}
+          className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+          title="Mark current as trim start"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          <span>Mark S</span>
+        </button>
 
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <label className="text-base font-bold text-white">
-                🟪 Trim End
-              </label>
-              <span className="font-mono text-sm font-semibold text-purple-400">
-                {formatDuration(trimEnd)}
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max={duration}
-              step="0.1"
-              value={trimEnd}
-              onChange={handleTrimEndChange}
-              className="w-full h-3 bg-gradient-to-r from-gray-700 to-gray-800 rounded-full appearance-none cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, #9333ea 0%, #9333ea ${(trimEnd / duration) * 100}%, #374151 ${(trimEnd / duration) * 100}%, #374151 100%)`
-              }}
-            />
-          </div>
-        </div>
+        <button
+          onClick={onSetTrimEndToCurrent}
+          className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+          title="Mark current as trim end"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          <span>Mark E</span>
+        </button>
 
-        {/* Quick Actions */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={onSeekToTrimStart}
-              className="group relative overflow-hidden bg-gradient-to-r from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border border-blue-400/30 hover:border-blue-400/60 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <span>⏮️</span>
-                <span>Go to Start</span>
-              </span>
-            </button>
-            <button
-              onClick={onSeekToTrimEnd}
-              className="group relative overflow-hidden bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-400/30 hover:border-purple-400/60 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <span>⏭️</span>
-                <span>Go to End</span>
-              </span>
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={onSetTrimStartToCurrent}
-              className="group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-green-600/20 hover:from-green-500/30 hover:to-green-600/30 border border-green-400/30 hover:border-green-400/60 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-green-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <span>📍</span>
-                <span>Mark Start</span>
-              </span>
-            </button>
-            <button
-              onClick={onSetTrimEndToCurrent}
-              className="group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-green-600/20 hover:from-green-500/30 hover:to-green-600/30 border border-green-400/30 hover:border-green-400/60 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-glow"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-green-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <span>📍</span>
-                <span>Mark End</span>
-              </span>
-            </button>
-          </div>
+        <button
+          onClick={onResetTrim}
+          className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+          title="Reset trim"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M1 4v6h6" />
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          </svg>
+          <span>Reset</span>
+        </button>
 
-          <button
-            onClick={onResetTrim}
-            className="group w-full relative overflow-hidden bg-gradient-to-r from-gray-600/20 to-gray-700/20 hover:from-gray-600/30 hover:to-gray-700/30 border border-gray-500/30 hover:border-gray-400/60 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 hover:scale-105"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-600/10 to-gray-700/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <span>🔄</span>
-              <span>Reset Trim</span>
-            </span>
-          </button>
-        </div>
+        {/* Spacer */}
+        <div className="flex-1" />
 
-        {/* Current Time Info */}
-        <div className="text-center pt-4 border-t border-gray-700/30">
-          <div className="mb-2 text-base font-semibold text-gray-300">
-            Current: <span className="font-mono text-white">{formatDuration(currentTime)}</span>
+        {/* Current Time */}
+        <span className="text-xs text-gray-400">
+          Current: <span className="font-mono text-gray-300">{formatDuration(currentTime)}</span>
+        </span>
+
+        {/* Warning */}
+        {!isWithinRange && (
+          <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/20 border border-orange-500/50 rounded text-xs text-orange-300">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/>
+            </svg>
+            <span>Outside trim range</span>
           </div>
-          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm ${
-            currentTime >= trimStart && currentTime <= trimEnd
-              ? 'bg-green-500/20 text-green-300 border-2 border-green-400/30'
-              : 'bg-orange-500/20 text-orange-300 border-2 border-orange-400/30'
-          }`}>
-            {currentTime >= trimStart && currentTime <= trimEnd ? (
-              <>
-                <span>✓</span>
-                <span>Within trim range</span>
-              </>
-            ) : (
-              <>
-                <span>⚠</span>
-                <span>Outside trim range</span>
-              </>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

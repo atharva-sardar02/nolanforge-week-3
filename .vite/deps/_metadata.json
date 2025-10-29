@@ -7,67 +7,67 @@
     "react": {
       "src": "../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "544376e1",
+      "fileHash": "a1b4ffbd",
       "needsInterop": true
     },
     "react-dom": {
       "src": "../../node_modules/react-dom/index.js",
       "file": "react-dom.js",
-      "fileHash": "8be0abbb",
+      "fileHash": "b8889ae2",
       "needsInterop": true
     },
     "react/jsx-dev-runtime": {
       "src": "../../node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
-      "fileHash": "2f16a2ab",
+      "fileHash": "e74cda89",
       "needsInterop": true
     },
     "react/jsx-runtime": {
       "src": "../../node_modules/react/jsx-runtime.js",
       "file": "react_jsx-runtime.js",
-      "fileHash": "21fcc845",
+      "fileHash": "77c88a7d",
       "needsInterop": true
     },
     "@tauri-apps/api/core": {
       "src": "../../node_modules/@tauri-apps/api/core.js",
       "file": "@tauri-apps_api_core.js",
-      "fileHash": "b5d3e796",
+      "fileHash": "60227dd2",
       "needsInterop": false
     },
     "@tauri-apps/api/path": {
       "src": "../../node_modules/@tauri-apps/api/path.js",
       "file": "@tauri-apps_api_path.js",
-      "fileHash": "d8c39830",
+      "fileHash": "0ec9796f",
       "needsInterop": false
     },
     "@tauri-apps/plugin-dialog": {
       "src": "../../node_modules/@tauri-apps/plugin-dialog/dist-js/index.js",
       "file": "@tauri-apps_plugin-dialog.js",
-      "fileHash": "a8f4de56",
+      "fileHash": "b9d0f3e6",
       "needsInterop": false
     },
     "@tauri-apps/plugin-fs": {
       "src": "../../node_modules/@tauri-apps/plugin-fs/dist-js/index.js",
       "file": "@tauri-apps_plugin-fs.js",
-      "fileHash": "d791a52e",
+      "fileHash": "9dfad954",
       "needsInterop": false
     },
     "react-dom/client": {
       "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "7b84870c",
+      "fileHash": "e0033a40",
       "needsInterop": true
     },
     "react-router-dom": {
       "src": "../../node_modules/react-router-dom/dist/index.mjs",
       "file": "react-router-dom.js",
-      "fileHash": "9b8d7ae4",
+      "fileHash": "eccbfe3e",
       "needsInterop": false
     },
     "zustand": {
       "src": "../../node_modules/zustand/esm/index.mjs",
       "file": "zustand.js",
-      "fileHash": "38349864",
+      "fileHash": "70414c68",
       "needsInterop": false
     }
   },

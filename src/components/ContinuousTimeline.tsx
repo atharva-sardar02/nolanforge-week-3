@@ -688,11 +688,11 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
           <div className="flex items-center justify-center gap-6 text-xs text-gray-400 font-medium">
             <span className="flex items-center gap-2">
               <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              <span>Green = Export start</span>
+              <span>Green = Trim start</span>
             </span>
             <span className="flex items-center gap-2">
               <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
-              <span>Purple = Export end</span>
+              <span>Purple = Trim end</span>
             </span>
             <span className="flex items-center gap-2">
               <span className="text-lg">🔴</span>

@@ -31,6 +31,7 @@ const Editor: React.FC = () => {
     getTotalDuration,
     setGlobalTrimStart,
     setGlobalTrimEnd,
+    resetGlobalTrim,
     setZoomLevel
   } = useEditState()
 
@@ -430,6 +431,118 @@ const Editor: React.FC = () => {
     useEditState.setState({ timelineClips: updatedClips })
   }
 
+  // Trim timeline to green/purple markers range
+  const handleTrimTimeline = () => {
+    const state = useEditState.getState()
+    const { timelineClips, globalTrimStart, globalTrimEnd, selectedClipId, currentTime, getTotalDuration } = state
+    const totalDuration = getTotalDuration()
+    
+    // Calculate trim range
+    const trimStart = globalTrimStart
+    const trimEnd = globalTrimEnd !== null ? globalTrimEnd : totalDuration
+    
+    // Validate trim range
+    if (trimStart >= trimEnd || trimStart < 0 || trimEnd > totalDuration) {
+      alert('⚠️ Invalid trim range. Please set green and purple markers correctly.')
+      return
+    }
+    
+    // If range covers entire timeline, nothing to do
+    if (trimStart === 0 && Math.abs(trimEnd - totalDuration) < 0.01) {
+      alert('ℹ️ Timeline already covers the full range.')
+      return
+    }
+    
+    // Filter and process clips that intersect with trim range
+    const trimmedClips: typeof timelineClips = []
+    let newSelectedClipId: string | null = null
+    
+    for (const clip of timelineClips) {
+      const clipEnd = clip.startTime + clip.duration
+      
+      // Check if clip intersects with trim range
+      if (clip.startTime < trimEnd && clipEnd > trimStart) {
+        // Calculate the portion of this clip within the trim range
+        const clipNewStart = Math.max(trimStart, clip.startTime)
+        const clipNewEnd = Math.min(trimEnd, clipEnd)
+        const clipNewDuration = clipNewEnd - clipNewStart
+        
+        // Skip if duration is too small (less than 0.01 seconds)
+        if (clipNewDuration < 0.01) {
+          continue
+        }
+        
+        // Calculate how much time into the original clip we need
+        const timeIntoOriginalClip = clipNewStart - clip.startTime
+        
+        // Update source trim points
+        const timeIntoSource = clip.trimStart + timeIntoOriginalClip
+        const newSourceTrimStart = timeIntoSource
+        const newSourceTrimEnd = newSourceTrimStart + clipNewDuration
+        
+        // Ensure source trim points are valid
+        if (newSourceTrimEnd > clip.sourceDuration) {
+          // Clip would extend beyond source - adjust duration
+          const maxAllowedDuration = clip.sourceDuration - newSourceTrimStart
+          if (maxAllowedDuration < 0.01) {
+            continue // Skip this clip
+          }
+          const adjustedDuration = Math.min(clipNewDuration, maxAllowedDuration)
+          
+          // Create trimmed clip with adjusted duration
+          // Spread operator preserves all properties (trackId, mediaFileId, overlayPosition, etc.)
+          const trimmedClip: typeof clip = {
+            ...clip,
+            startTime: clipNewStart - trimStart, // Shift to start at 0
+            duration: adjustedDuration,
+            trimStart: newSourceTrimStart,
+            trimEnd: newSourceTrimStart + adjustedDuration,
+          }
+          trimmedClips.push(trimmedClip)
+        } else {
+          // Normal case - clip fits within source
+          // Spread operator preserves all properties (trackId, mediaFileId, overlayPosition, etc.)
+          const trimmedClip: typeof clip = {
+            ...clip,
+            startTime: clipNewStart - trimStart, // Shift to start at 0
+            duration: clipNewDuration,
+            trimStart: newSourceTrimStart,
+            trimEnd: newSourceTrimEnd,
+          }
+          trimmedClips.push(trimmedClip)
+        }
+        
+        // If this was the selected clip, keep it selected
+        if (clip.id === selectedClipId) {
+          newSelectedClipId = clip.id
+        }
+      }
+    }
+    
+    if (trimmedClips.length === 0) {
+      alert('⚠️ No clips remain after trimming. Trim range is outside all clips.')
+      return
+    }
+    
+    // Calculate new total duration
+    const newTotalDuration = trimEnd - trimStart
+    
+    // Update state
+    const newState = {
+      timelineClips: trimmedClips,
+      selectedClipId: newSelectedClipId,
+      currentTime: Math.max(0, Math.min(currentTime - trimStart, newTotalDuration)),
+      globalTrimStart: 0,
+      globalTrimEnd: newTotalDuration,
+      isPlaying: false // Pause playback after trim
+    }
+    
+    useEditState.setState(newState)
+    
+    console.log(`✂️ Trimmed timeline: ${timelineClips.length} clips → ${trimmedClips.length} clips`)
+    console.log(`   Range: ${trimStart}s - ${trimEnd}s (${newTotalDuration.toFixed(2)}s)`)
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Top Control Bar */}
@@ -520,8 +633,8 @@ const Editor: React.FC = () => {
       </div>
 
       {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto p-8">
-        <div className="w-full space-y-8">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-8">
+        <div className="w-full space-y-8 max-w-full">
           
           {/* Video Player */}
           <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl">
@@ -715,8 +828,20 @@ const Editor: React.FC = () => {
             <TimelineTools
               onSplit={handleSplitClip}
               onDelete={handleDeleteClip}
+              onTrim={handleTrimTimeline}
               canSplit={!!selectedClipId}
               canDelete={!!selectedClipId}
+              canTrim={globalTrimStart > 0 || (globalTrimEnd !== null && Math.abs((globalTrimEnd || 0) - totalDuration) > 0.01)}
+              zoomLevel={zoomLevel}
+              onZoomChange={setZoomLevel}
+              onGoToStart={() => setCurrentTime(0)}
+              onGoToEnd={() => setCurrentTime(totalDuration)}
+              onMarkStart={() => setGlobalTrimStart(currentTime)}
+              onMarkEnd={() => setGlobalTrimEnd(currentTime)}
+              totalDuration={totalDuration}
+              currentTime={currentTime}
+              globalTrimStart={globalTrimStart}
+              globalTrimEnd={globalTrimEnd}
             />
           )}
 
@@ -728,113 +853,6 @@ const Editor: React.FC = () => {
             />
           )}
 
-          {/* Timeline Zoom Controls */}
-          {timelineClips.length > 0 && (
-            <div className="glass rounded-3xl border border-gray-700/30 backdrop-blur-xl p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                  <span className="text-2xl">🔍</span>
-                  <span>Timeline Zoom</span>
-                </h3>
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-400 text-sm">
-                    Current: {Math.round(zoomLevel)}px/s
-                  </span>
-                  <span className="text-gray-500 text-sm">
-                    ({Math.round((zoomLevel / 50) * 100)}%)
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-center gap-4">
-                {/* Zoom Out Button */}
-                <button
-                  onClick={() => setZoomLevel(Math.max(10, zoomLevel - 25))}
-                  disabled={zoomLevel <= 10}
-                  className="group relative w-12 h-12 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-gray-500/25"
-                  title="Zoom Out (Ctrl + -)"
-                >
-                  <div className="absolute inset-0 rounded-lg bg-gray-600/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10 text-white text-xl font-bold">
-                    −
-                  </div>
-                </button>
-
-                {/* Zoom Reset Button */}
-                <button
-                  onClick={() => setZoomLevel(50)}
-                  className="group relative px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/25"
-                  title="Reset Zoom (Ctrl + 0)"
-                >
-                  <div className="absolute inset-0 rounded-lg bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10 flex items-center gap-2">
-                    <span className="text-lg">🎯</span>
-                    <span>Reset</span>
-                  </div>
-                </button>
-
-                {/* Zoom In Button */}
-                <button
-                  onClick={() => setZoomLevel(Math.min(200, zoomLevel + 25))}
-                  disabled={zoomLevel >= 200}
-                  className="group relative w-12 h-12 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg hover:shadow-gray-500/25"
-                  title="Zoom In (Ctrl + +)"
-                >
-                  <div className="absolute inset-0 rounded-lg bg-gray-600/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10 text-white text-xl font-bold">
-                    +
-                  </div>
-                </button>
-              </div>
-
-              {/* Zoom Presets */}
-              <div className="mt-4 pt-4 border-t border-gray-700/30">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-gray-400 text-sm font-medium">Quick Zoom:</span>
-                  <div className="flex gap-2">
-                    {[25, 50, 100, 150, 200].map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => setZoomLevel(level)}
-                        className={`px-3 py-1 rounded-lg font-medium text-sm transition-colors ${
-                          zoomLevel === level
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                        title={`${level}px/s (${Math.round((level / 50) * 100)}%)`}
-                      >
-                        {Math.round((level / 50) * 100)}%
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Keyboard Shortcuts Info */}
-              <div className="mt-4 pt-4 border-t border-gray-700/30">
-                <div className="flex items-center justify-center gap-6 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">Ctrl</kbd>
-                    <span>+</span>
-                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">+</kbd>
-                    <span>Zoom In</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">Ctrl</kbd>
-                    <span>+</span>
-                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">-</kbd>
-                    <span>Zoom Out</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">Ctrl</kbd>
-                    <span>+</span>
-                    <kbd className="px-2 py-1 bg-gray-800/70 rounded text-gray-300 font-mono border border-gray-700/50">0</kbd>
-                    <span>Reset</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Individual Clip Timeline - For trimming selected clip */}
           {timelineClips.length > 0 && selectedClip && (

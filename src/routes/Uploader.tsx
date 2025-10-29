@@ -125,7 +125,7 @@ const Uploader: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Content with Modern Spacing */}
-      <div className="flex-1 overflow-auto p-12 bg-gradient-to-br from-gray-950 to-gray-900">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-12 bg-gradient-to-br from-gray-950 to-gray-900">
         <div className="w-full h-full space-y-8">
           {/* Error and Warning Display */}
           {(useMediaStore.getState().error || warnings.length > 0) && (

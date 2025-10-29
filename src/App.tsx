@@ -9,7 +9,7 @@ function App() {
 
   return (
     <Router>
-      <div className="flex flex-col h-screen w-screen bg-gray-950 overflow-hidden">
+      <div className="flex flex-col h-screen w-full bg-gray-950 overflow-hidden">
         <Navbar />
         <main className="flex-1 flex flex-col overflow-hidden w-full">
           <Routes>

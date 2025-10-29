@@ -315,7 +315,7 @@ const Recorder: React.FC = () => {
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
             {/* Preview Area - Takes 2 columns on large screens */}
