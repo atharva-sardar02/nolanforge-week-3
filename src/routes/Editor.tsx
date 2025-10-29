@@ -31,7 +31,6 @@ const Editor: React.FC = () => {
     getTotalDuration,
     setGlobalTrimStart,
     setGlobalTrimEnd,
-    resetGlobalTrim,
     setZoomLevel
   } = useEditState()
 
@@ -838,10 +837,6 @@ const Editor: React.FC = () => {
               onGoToEnd={() => setCurrentTime(totalDuration)}
               onMarkStart={() => setGlobalTrimStart(currentTime)}
               onMarkEnd={() => setGlobalTrimEnd(currentTime)}
-              totalDuration={totalDuration}
-              currentTime={currentTime}
-              globalTrimStart={globalTrimStart}
-              globalTrimEnd={globalTrimEnd}
             />
           )}
 

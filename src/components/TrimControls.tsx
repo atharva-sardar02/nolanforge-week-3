@@ -31,7 +31,6 @@ const TrimControls: React.FC<TrimControlsProps> = ({
   className = ''
 }) => {
   const trimDuration = trimEnd - trimStart
-  const isValid = trimStart < trimEnd && trimEnd > 0
 
   const handleTrimStartChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value)

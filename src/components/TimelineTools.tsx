@@ -2,7 +2,6 @@ import React from 'react'
 import SplitButton from './SplitButton'
 import DeleteButton from './DeleteButton'
 import TrimButton from './TrimButton'
-import { formatDuration } from '../utils/fileUtils'
 
 interface TimelineToolsProps {
   onSplit: () => void
@@ -18,10 +17,6 @@ interface TimelineToolsProps {
   onGoToEnd: () => void
   onMarkStart: () => void
   onMarkEnd: () => void
-  totalDuration: number
-  currentTime: number
-  globalTrimStart: number
-  globalTrimEnd: number | null
   className?: string
 }
 
@@ -38,14 +33,8 @@ const TimelineTools: React.FC<TimelineToolsProps> = ({
   onGoToEnd,
   onMarkStart,
   onMarkEnd,
-  totalDuration,
-  currentTime,
-  globalTrimStart,
-  globalTrimEnd,
   className = ''
 }) => {
-  const isOutsideTrimRange = globalTrimEnd !== null && (currentTime < globalTrimStart || currentTime > globalTrimEnd)
-  
   return (
     <div className={`
       flex flex-col gap-3 p-4 bg-gray-800/50 rounded-lg border border-gray-700/30

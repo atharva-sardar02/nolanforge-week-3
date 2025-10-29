@@ -77,66 +77,6 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ multiTrackMode = false }) =
     }
   }, [addFile, setLoading, setError, clearError])
 
-  // Handle files with path information (from Tauri file dialog)
-  const handleFilesAddedWithPath = useCallback(async (filesWithPath: { file: File; path: string }[]) => {
-    clearError()
-    setWarnings([])
-    setLoading(true)
-    
-    try {
-      const files = filesWithPath.map(f => f.file)
-      const validation = validateMultipleFiles(files)
-      
-      if (validation.warnings.length > 0) {
-        const allWarnings = validation.warnings.flatMap(w => w.warnings)
-        setWarnings(allWarnings)
-      }
-      
-      if (validation.invalidFiles.length > 0) {
-        const errorMessages = validation.invalidFiles.map(({ file, error }) => 
-          `${file.name}: ${error}`
-        )
-        setError(errorMessages.join('; '))
-      }
-      
-      // Process valid files with path information
-      for (const fileWithPath of filesWithPath) {
-        const { file, path } = fileWithPath
-        if (validation.validFiles.includes(file)) {
-          try {
-            // Attach the path to the file object for createMediaFile to use
-            Object.defineProperty(file, 'path', {
-              value: path,
-              writable: false,
-              configurable: true
-            })
-            const mediaFile = await createMediaFile(file)
-            addFile(mediaFile)
-          } catch (err) {
-            console.error(`Failed to process file ${file.name}:`, err)
-            setError(`Failed to process ${file.name}`)
-          }
-        }
-      }
-      
-      if (validation.validFiles.length > 0) {
-        const summary = `Successfully imported ${validation.validFiles.length} file(s)`
-        if (validation.invalidFiles.length > 0) {
-          console.warn(`${summary}, ${validation.invalidFiles.length} file(s) failed validation`)
-        } else {
-          console.log(summary)
-        }
-      }
-      
-    } catch (error) {
-      const errorMessage = getErrorMessage(error)
-      setError(`Failed to process files: ${errorMessage}`)
-      console.error('Error processing files:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [addFile, setLoading, setError, clearError])
-
   // Handle ESC key to close preview
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

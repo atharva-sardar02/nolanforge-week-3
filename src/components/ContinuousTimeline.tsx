@@ -57,11 +57,8 @@ const ContinuousTimeline: React.FC<TimelineProps> = ({
   // Multi-track state
   const {
     tracks,
-    selectedTrackId,
     addTrack,
     removeTrack,
-    selectTrack,
-    updateTrack,
     setTrackMute,
     setTrackSolo,
     setTrackLock,
